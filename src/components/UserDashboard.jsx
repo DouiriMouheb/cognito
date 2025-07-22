@@ -1,5 +1,6 @@
 import { useApi, useUserProfile } from '../hooks/useApi';
 import LoadingScreen from './LoadingScreen';
+import LogoutButtons from './LogoutButtons';
 
 const UserDashboard = () => {
   const { profile, hasScope, getClaim } = useUserProfile();
@@ -116,6 +117,11 @@ const UserDashboard = () => {
             <p className="text-yellow-700">You have administrative privileges and can access advanced features.</p>
           </div>
         )}
+
+        {/* Logout Section */}
+        <div className="mt-8 text-center">
+          <LogoutButtons />
+        </div>
       </div>
     </div>
   );
