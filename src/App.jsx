@@ -130,19 +130,14 @@ function App() {
               {profile.sub && (
                 <div><strong>User ID:</strong> {profile.sub}</div>
               )}
-              {profile.username && (
-                <div><strong>Username:</strong> {profile.username}</div>
-              )}
-              {profile.preferred_username && (
-                <div><strong>Preferred Username:</strong> {profile.preferred_username}</div>
-              )}
+          
+           
             </div>
           </div>
 
           <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '5px', marginBottom: '15px' }}>
             <h3 style={{ color: '#34495e', marginBottom: '10px' }}>Session Information</h3>
             <div style={{ display: 'grid', gap: '8px', fontSize: '14px' }}>
-              <div><strong>Login Time:</strong> {new Date(profile.auth_time * 1000).toLocaleString()}</div>
               <div><strong>Token Expires:</strong> {new Date(profile.exp * 1000).toLocaleString()}</div>
               <div><strong>Issuer:</strong> {profile.iss}</div>
             </div>
