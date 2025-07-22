@@ -18,11 +18,13 @@ cognito/
 │   │   │   └── index.js                # UI components exports
 │   │   ├── Dashboard.jsx               # Main dashboard
 │   │   ├── ErrorScreen.jsx             # Error display
+│   │   ├── Layout.jsx                  # Main layout with sidebar
 │   │   ├── LoadingScreen.jsx           # Loading display
 │   │   ├── LoginScreen.jsx             # Login interface
 │   │   ├── LogoutButtons.jsx           # Logout functionality
 │   │   ├── LogoutSuccess.jsx           # Logout success page
 │   │   ├── ProtectedRoute.jsx          # Route protection
+│   │   ├── Sidebar.jsx                 # Toggleable sidebar
 │   │   ├── UserDashboard.jsx           # User-specific dashboard
 │   │   ├── UserProfile.jsx             # User profile display
 │   │   └── index.js                    # Component exports
@@ -72,7 +74,9 @@ cognito/
 ### **📐 Layout Components** (`src/components/layout/`)
 - `Dashboard.jsx` - Main dashboard layout
 - `UserDashboard.jsx` - User-specific layout
-- *Future: Header, Sidebar, Footer, etc.*
+- `Layout.jsx` - Main layout wrapper with header and sidebar
+- `Sidebar.jsx` - Toggleable navigation sidebar
+- *Future: Header, Footer, Navigation, etc.*
 
 ---
 

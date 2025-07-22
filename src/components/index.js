@@ -10,6 +10,9 @@ export { default as UserProfile } from './UserProfile';
 export { default as LogoutButtons } from './LogoutButtons';
 export { default as ProtectedRoute } from './ProtectedRoute';
 export { default as UserDashboard } from './UserDashboard';
+export { default as Sidebar } from './Sidebar';
+export { default as Layout } from './Layout';
+export { default as Settings } from './Settings';
 
 // Organized category exports
 export * from './auth';

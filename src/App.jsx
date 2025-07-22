@@ -1,5 +1,6 @@
 ﻿import { useAuth } from "react-oidc-context";
 import { useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LoadingScreen from "./components/LoadingScreen";
 import ErrorScreen from "./components/ErrorScreen";
 import LoginScreen from "./components/LoginScreen";
@@ -39,7 +40,13 @@ function App() {
   }
 
   if (auth.isAuthenticated) {
-    return <Dashboard user={auth.user} />;
+    return (
+      <Router>
+        <Routes>
+          <Route path="/*" element={<Dashboard />} />
+        </Routes>
+      </Router>
+    );
   }
 
   // Not authenticated - show login screen
