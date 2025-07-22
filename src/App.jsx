@@ -1,13 +1,23 @@
 ﻿import { useAuth } from "react-oidc-context";
+import { useEffect } from "react";
 import LoadingScreen from "./components/LoadingScreen";
 import ErrorScreen from "./components/ErrorScreen";
 import LoginScreen from "./components/LoginScreen";
 import Dashboard from "./components/Dashboard";
 import LogoutSuccess from "./components/LogoutSuccess";
+import { SecurityValidator } from "./utils/security";
 
 function App() {
   const auth = useAuth();
 
+  // Silent security initialization
+  useEffect(() => {
+    // Initialize security monitoring silently
+    SecurityValidator.checkSuspiciousActivity();
+
+    // Clear any old sensitive data on app start
+    SecurityValidator.clearSensitiveData();
+  }, []);
 
   // Handle logout callback route
   if (window.location.pathname === "/signout-oidc") {

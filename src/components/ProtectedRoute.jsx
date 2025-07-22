@@ -1,6 +1,7 @@
 import { useAuth } from "react-oidc-context";
 import LoadingScreen from "./LoadingScreen";
 import LoginScreen from "./LoginScreen";
+import { SecurityValidator } from "../utils/security";
 
 const ProtectedRoute = ({ children, requiredScopes = [] }) => {
   const auth = useAuth();
@@ -15,11 +16,23 @@ const ProtectedRoute = ({ children, requiredScopes = [] }) => {
     return <LoginScreen />;
   }
 
-  // Check if user has required scopes (optional)
+  // Silent token validation (no user notification unless critical)
+  if (auth.user) {
+    const sessionValidation = SecurityValidator.validateSession(auth.user);
+    if (!sessionValidation.valid) {
+      // Silently redirect to login if session is invalid
+      setTimeout(() => auth.signinRedirect(), 100);
+      return <LoadingScreen message="Refreshing session..." subtitle="Please wait" />;
+    }
+  }
+
+  // Check if user has required scopes
   if (requiredScopes.length > 0) {
-    const userScopes = auth.user?.profile?.scope?.split(' ') || [];
-    const hasRequiredScopes = requiredScopes.every(scope => userScopes.includes(scope));
-    
+    const hasRequiredScopes = SecurityValidator.hasRequiredScopes(
+      auth.user?.profile?.scope?.split(' ') || [],
+      requiredScopes
+    );
+
     if (!hasRequiredScopes) {
       return (
         <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center p-4">
@@ -33,9 +46,15 @@ const ProtectedRoute = ({ children, requiredScopes = [] }) => {
             <p className="text-sm text-gray-500 mb-4">
               You don't have the required permissions to access this resource.
             </p>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-gray-400 mb-4">
               Required scopes: {requiredScopes.join(', ')}
             </p>
+            <button
+              onClick={() => auth.signoutRedirect()}
+              className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+            >
+              Sign Out
+            </button>
           </div>
         </div>
       );

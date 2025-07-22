@@ -5,7 +5,7 @@ import { AuthProvider } from "react-oidc-context";
 import "./index.css";
 
 const cognitoAuthConfig = {
-  authority: "https://cognito-idp.eu-south-1.amazonaws.com/eu-south-1_gKX37NHrI",
+  authority: import.meta.env.VITE_COGNITO_AUTHORITY || "https://cognito-idp.eu-south-1.amazonaws.com/eu-south-1_gKX37NHrI",
   client_id: import.meta.env.VITE_COGNITO_CLIENT_ID,
   client_secret: import.meta.env.VITE_COGNITO_CLIENT_SECRET,
   redirect_uri: import.meta.env.VITE_COGNITO_REDIRECT_URI,
@@ -14,12 +14,12 @@ const cognitoAuthConfig = {
   scope: "aws.cognito.signin.user.admin email https://web.sinergia.cloud/change-password https://web.sinergia.cloud/insideep https://web.sinergia.cloud/read.all https://web.sinergia.cloud/rt https://web.sinergia.cloud/write.all openid phone profile",
 
   // Configuration for proper logout handling
-  automaticSilentRenew: false,
+  automaticSilentRenew: false, // Disable to prevent logout conflicts
   loadUserInfo: false,
-  monitorSession: false,
+  monitorSession: false, // Disable to prevent logout issues
   filterProtocolClaims: true,
   response_mode: "query",
-  revokeTokensOnSignout: true, // This ensures tokens are revoked on signout
+  revokeTokensOnSignout: true, // Ensures tokens are revoked on signout
 };
 
 

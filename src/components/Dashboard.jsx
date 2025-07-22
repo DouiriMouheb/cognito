@@ -3,7 +3,6 @@ import UserProfile from './UserProfile';
 import TokensDisplay from './TokensDisplay';
 import LogoutButtons from './LogoutButtons';
 import UserDashboard from './UserDashboard';
-import ApiTestComponent from './ApiTestComponent';
 
 const Dashboard = ({ user }) => {
   const profile = user?.profile || {};
@@ -12,7 +11,6 @@ const Dashboard = ({ user }) => {
   const tabs = [
     { id: 'overview', name: 'Overview', icon: '📊' },
     { id: 'dashboard', name: 'User Dashboard', icon: '🏠' },
-    { id: 'api-test', name: 'API Testing', icon: '🔧' },
     { id: 'tokens', name: 'Tokens', icon: '🎫' },
   ];
 
@@ -38,8 +36,8 @@ const Dashboard = ({ user }) => {
                   <p className="text-sm text-purple-700 mt-1">Check the User Dashboard tab for examples</p>
                 </div>
                 <div className="p-4 bg-orange-50 rounded-lg">
-                  <h4 className="font-medium text-orange-900">API Testing</h4>
-                  <p className="text-sm text-orange-700 mt-1">Test your API endpoints in the API Testing tab</p>
+                  <h4 className="font-medium text-orange-900">Token Management</h4>
+                  <p className="text-sm text-orange-700 mt-1">View and manage your authentication tokens</p>
                 </div>
               </div>
             </div>
@@ -48,8 +46,6 @@ const Dashboard = ({ user }) => {
         );
       case 'dashboard':
         return <UserDashboard />;
-      case 'api-test':
-        return <ApiTestComponent />;
       case 'tokens':
         return (
           <div className="space-y-6">

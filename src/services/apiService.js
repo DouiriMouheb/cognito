@@ -1,4 +1,5 @@
 // API Service for making authenticated requests with Cognito tokens
+import { SecurityValidator, SecurityLogger } from '../utils/security';
 
 class ApiService {
   constructor(baseURL = import.meta.env.VITE_API_BASE_URL || 'https://api.example.com') {
@@ -26,11 +27,24 @@ class ApiService {
     return null;
   }
 
-  // Create headers with authentication
+  // Create headers with authentication and security headers
   createHeaders(additionalHeaders = {}) {
     const accessToken = this.getAccessToken();
+
+    // Silent token validation
+    if (accessToken) {
+      const tokenValidation = SecurityValidator.validateToken(accessToken);
+      if (!tokenValidation.valid) {
+        // Silent handling - just throw error without logging details
+        throw new Error('Authentication required');
+      }
+    }
+
     const headers = {
       'Content-Type': 'application/json',
+      // Basic security headers
+      'X-Requested-With': 'XMLHttpRequest',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
       ...additionalHeaders
     };
 
@@ -41,38 +55,102 @@ class ApiService {
     return headers;
   }
 
-  // Generic request method
+  // Generic request method with enhanced security
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
+
+    // Log API request for security monitoring
+    SecurityLogger.log('api_request', {
+      endpoint,
+      method: options.method || 'GET',
+      timestamp: new Date().toISOString()
+    });
+
     const config = {
       headers: this.createHeaders(options.headers),
       ...options
     };
 
     try {
+      const startTime = Date.now();
       const response = await fetch(url, config);
-      
+      const responseTime = Date.now() - startTime;
+
+      // Log response for monitoring
+      SecurityLogger.log('api_response', {
+        endpoint,
+        status: response.status,
+        responseTime,
+        success: response.ok
+      });
+
       // Handle token expiration
       if (response.status === 401) {
-        // Token might be expired, you could trigger a refresh here
+        SecurityLogger.log('token_expired', { endpoint });
         throw new Error('Authentication failed - token may be expired');
       }
 
+      // Handle forbidden access
+      if (response.status === 403) {
+        SecurityLogger.log('access_forbidden', { endpoint });
+        throw new Error('Access forbidden - insufficient permissions');
+      }
+
       if (!response.ok) {
+        SecurityLogger.log('api_error', {
+          endpoint,
+          status: response.status,
+          statusText: response.statusText
+        });
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       // Handle different content types
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
-        return await response.json();
+        const data = await response.json();
+
+        // Sanitize response data if it contains user input
+        if (data && typeof data === 'object') {
+          return this.sanitizeResponseData(data);
+        }
+
+        return data;
       }
-      
+
       return await response.text();
     } catch (error) {
+      SecurityLogger.log('api_request_failed', {
+        endpoint,
+        error: error.message,
+        stack: error.stack
+      });
       console.error('API request failed:', error);
       throw error;
     }
+  }
+
+  // Sanitize response data to prevent XSS
+  sanitizeResponseData(data) {
+    if (Array.isArray(data)) {
+      return data.map(item => this.sanitizeResponseData(item));
+    }
+
+    if (data && typeof data === 'object') {
+      const sanitized = {};
+      Object.keys(data).forEach(key => {
+        if (typeof data[key] === 'string') {
+          sanitized[key] = SecurityValidator.sanitizeInput(data[key]);
+        } else if (typeof data[key] === 'object') {
+          sanitized[key] = this.sanitizeResponseData(data[key]);
+        } else {
+          sanitized[key] = data[key];
+        }
+      });
+      return sanitized;
+    }
+
+    return data;
   }
 
   // GET request
