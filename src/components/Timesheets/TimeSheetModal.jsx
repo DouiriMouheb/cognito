@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Modal } from "../common/Modal";
 import { Button } from "../common/Button";
+import { Input } from "../common/Input";
 import { CustomSelect } from "../common/CustomSelect";
 import { showToast } from "../../utils/toast";
 import { useAuth } from "react-oidc-context";
@@ -277,39 +278,39 @@ export const TimeSheetModal = ({
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.organizationId) {
       newErrors.organizationId = "Organization is required";
     }
-    
+
     if (!formData.customerId) {
       newErrors.customerId = "Customer is required";
     }
-    
+
     if (!formData.processId) {
       newErrors.processId = "Process is required";
     }
-    
+
     if (!formData.activityId) {
       newErrors.activityId = "Activity is required";
     }
-    
+
     if (!formData.date) {
       newErrors.date = "Date is required";
     }
-    
+
     if (!formData.startTime) {
       newErrors.startTime = "Start time is required";
     }
-    
+
     if (!formData.endTime) {
       newErrors.endTime = "End time is required";
     }
-    
+
     if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
       newErrors.endTime = "End time must be after start time";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -320,7 +321,7 @@ export const TimeSheetModal = ({
     }
 
     setIsSubmitting(true);
-    
+
     try {
       await onSave(formData);
       onClose();
@@ -363,32 +364,27 @@ export const TimeSheetModal = ({
       <div className="p-6 space-y-6">
         {/* Row 1: Organization, Customer, Work Location */}
         <div className="grid grid-cols-3 gap-4">
+
           <div>
             <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
               <Building className="w-4 h-4 mr-1" />
               Organization *
             </label>
-            <select
+            <CustomSelect
               value={formData.organizationId}
-              onChange={(e) => handleInputChange("organizationId", e.target.value)}
+              onChange={(value) => handleInputChange("organizationId", value)}
+              options={organizations.map(org => ({
+                value: org.code || org.id,
+                label: org.name,
+                name: org.name
+              }))}
+              placeholder={loadingOrganizations ? "Loading organizations..." : "Select an organization..."}
               disabled={isReadOnly || loadingOrganizations}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.organizationId ? "border-red-300" : "border-gray-300"
-              } ${isReadOnly || loadingOrganizations ? "bg-gray-100" : "bg-white"}`}
-            >
-              {loadingOrganizations ? (
-                <option value="">Loading organizations...</option>
-              ) : (
-                organizations.map((org) => (
-                  <option key={org.id || org.code} value={org.code || org.id}>
-                    {org.name}
-                  </option>
-                ))
-              )}
-            </select>
-            {errors.organizationId && (
-              <p className="mt-1 text-sm text-red-600">{errors.organizationId}</p>
-            )}
+              loading={loadingOrganizations}
+              error={errors.organizationId}
+              icon={Building}
+              emptyMessage="No organizations available"
+            />
           </div>
 
           <div>
@@ -402,8 +398,8 @@ export const TimeSheetModal = ({
               options={customerOptions}
               placeholder={
                 loadingCustomers ? "Loading customers..." :
-                !formData.organizationId ? "Select an organization first..." :
-                "Search customers..."
+                  !formData.organizationId ? "Select an organization first..." :
+                    "Search customers..."
               }
               searchable={true}
               clearable={true}
@@ -418,38 +414,39 @@ export const TimeSheetModal = ({
           <div>
             <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
               <MapPin className="w-4 h-4 mr-1" />
-              Work Location
+              Work Location *
             </label>
-            <select
+            <CustomSelect
               value={formData.workLocation}
-              onChange={(e) => handleInputChange("workLocation", e.target.value)}
+              onChange={(value) => handleInputChange("workLocation", value)}
+              options={[
+                { value: "Organization Location", label: "Office", name: "Organization Location" },
+                { value: "Remote", label: "Remote", name: "Remote" },
+                { value: "Client Site", label: "Client Site", name: "Client Site" }
+              ]}
+              placeholder=" "
               disabled={isReadOnly}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                isReadOnly ? "bg-gray-100" : "bg-white"
-              } border-gray-300`}
-            >
-              <option value="Organization Location">Organization Location</option>
-              <option value="Remote">Remote</option>
-              <option value="Client Site">Client Site</option>
-            </select>
+              icon={MapPin}
+              emptyMessage="No work locations available"
+            />
           </div>
         </div>
 
-        {/* Row 2: Process, Activity, Date */}
+        {/* Row 2: Comessa, Activity, Date */}
         <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
               <Settings className="w-4 h-4 mr-1" />
-              Process *
+              Comessa *
             </label>
             <CustomSelect
               value={formData.processId}
               onChange={(value) => handleInputChange("processId", value)}
               options={processOptions}
               placeholder={
-                loadingProcesses ? "Loading processes..." :
-                !formData.organizationId ? "Select an organization first..." :
-                "Search processes..."
+                loadingProcesses ? "Loading Comessa..." :
+                  !formData.organizationId ? "Select an organization first..." :
+                    "Comessa"
               }
               searchable={true}
               clearable={true}
@@ -461,51 +458,21 @@ export const TimeSheetModal = ({
             />
           </div>
 
-          <div>
-            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-              <Activity className="w-4 h-4 mr-1" />
-              Activity *
-            </label>
-            <select
-              value={formData.activityId}
-              onChange={(e) => handleInputChange("activityId", e.target.value)}
-              disabled={isReadOnly || !formData.processId}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.activityId ? "border-red-300" : "border-gray-300"
-              } ${isReadOnly || !formData.processId ? "bg-gray-100" : "bg-white"}`}
-            >
-              {!formData.processId ? (
-                <option value="">Select a process first...</option>
-              ) : (
-                processActivities.map((activity) => (
-                  <option key={activity.id} value={activity.id}>
-                    {activity.name}
-                  </option>
-                ))
-              )}
-            </select>
-            {errors.activityId && (
-              <p className="mt-1 text-sm text-red-600">{errors.activityId}</p>
-            )}
-          </div>
 
-          <div>
-            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-              <Calendar className="w-4 h-4 mr-1" />
-              Date *
-            </label>
-            <input
+
+          <div>   <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+            <Calendar className="w-4 h-4 mr-1" />
+            Date *
+          </label>
+            <Input
               type="date"
+
               value={formData.date}
               onChange={(e) => handleInputChange("date", e.target.value)}
               disabled={isReadOnly}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.date ? "border-red-300" : "border-gray-300"
-              } ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
+              required
+              error={errors.date}
             />
-            {errors.date && (
-              <p className="mt-1 text-sm text-red-600">{errors.date}</p>
-            )}
           </div>
         </div>
 
@@ -514,56 +481,46 @@ export const TimeSheetModal = ({
           <div>
             <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
               <Clock className="w-4 h-4 mr-1" />
-              Start Time *
+              Start Time
             </label>
-            <input
+            <Input
               type="time"
+
               value={formData.startTime}
               onChange={(e) => handleInputChange("startTime", e.target.value)}
               disabled={isReadOnly}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.startTime ? "border-red-300" : "border-gray-300"
-              } ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
+              required
+              error={errors.startTime}
             />
-            {errors.startTime && (
-              <p className="mt-1 text-sm text-red-600">{errors.startTime}</p>
-            )}
           </div>
 
           <div>
             <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
               <Clock className="w-4 h-4 mr-1" />
-              End Time *
+              End Time
             </label>
-            <input
+            <Input
               type="time"
+
               value={formData.endTime}
               onChange={(e) => handleInputChange("endTime", e.target.value)}
               disabled={isReadOnly}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.endTime ? "border-red-300" : "border-gray-300"
-              } ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
+              required
+              error={errors.endTime}
             />
-            {errors.endTime && (
-              <p className="mt-1 text-sm text-red-600">{errors.endTime}</p>
-            )}
           </div>
         </div>
 
         {/* Task Description */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Task Description
-          </label>
-          <textarea
+          <Input
+            type="textarea"
+            label="Task Description"
             value={formData.description}
             onChange={(e) => handleInputChange("description", e.target.value)}
             disabled={isReadOnly}
             rows={4}
             placeholder="Optional task description"
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${
-              isReadOnly ? "bg-gray-100" : "bg-white"
-            } border-gray-300`}
           />
         </div>
 

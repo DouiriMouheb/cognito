@@ -5,7 +5,6 @@ export { default as LoginScreen } from '../LoginScreen';
 export { default as LogoutButtons } from '../LogoutButtons';
 export { default as LogoutSuccess } from '../LogoutSuccess';
 export { default as ProtectedRoute } from '../ProtectedRoute';
-export { default as UserProfile } from '../UserProfile';
 
 // Future auth components can be added here:
 // export { default as SignupForm } from './SignupForm';

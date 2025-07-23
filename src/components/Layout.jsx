@@ -16,17 +16,13 @@ const Layout = ({ children }) => {
   const getPageTitle = () => {
     switch (location.pathname) {
       case '/':
-        return 'Dashboard';
+        return 'Timesheets';
       case '/apis':
         return 'APIs';
       case '/timesheets':
         return 'Timesheets';
-      case '/settings':
-        return 'Settings';
-      case '/profile':
-        return 'Profile';
       default:
-        return 'Dashboard';
+        return 'Timesheets';
     }
   };
 
