@@ -1,5 +1,5 @@
 ﻿import { useAuth } from "react-oidc-context";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LoadingScreen from "./components/LoadingScreen";
 import ErrorScreen from "./components/ErrorScreen";
@@ -10,6 +10,7 @@ import { SecurityValidator } from "./utils/security";
 
 function App() {
   const auth = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Silent security initialization
   useEffect(() => {
@@ -19,6 +20,22 @@ function App() {
     // Clear any old sensitive data on app start
     SecurityValidator.clearSensitiveData();
   }, []);
+
+  // Detect logout process
+  useEffect(() => {
+    // Check if we're in the middle of a logout process
+    const isLogoutInProgress = localStorage.getItem('logout_in_progress');
+    if (isLogoutInProgress) {
+      setIsLoggingOut(true);
+    }
+
+    // Listen for authentication state changes
+    if (!auth.isLoading && !auth.isAuthenticated && isLoggingOut) {
+      // Logout completed, clear the flag
+      localStorage.removeItem('logout_in_progress');
+      setIsLoggingOut(false);
+    }
+  }, [auth.isLoading, auth.isAuthenticated, isLoggingOut]);
 
   // Handle logout callback route
   if (window.location.pathname === "/signout-oidc") {
@@ -30,8 +47,10 @@ function App() {
   }
 
   // Authentication state handling
-  if (auth.isLoading) {
-    return <LoadingScreen message="Loading..." subtitle="Authenticating with AWS Cognito" />;
+  if (auth.isLoading || isLoggingOut) {
+    const message = isLoggingOut ? "Signing out..." : "Loading...";
+    const subtitle = isLoggingOut ? "Please wait while we sign you out" : "Authenticating with AWS Cognito";
+    return <LoadingScreen message={message} subtitle={subtitle} />;
   }
 
   if (auth.error) {

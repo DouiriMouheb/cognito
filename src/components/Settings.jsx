@@ -3,8 +3,6 @@ import { useUserProfile } from '../hooks/useApi';
 const Settings = () => {
   const { profile } = useUserProfile();
 
-  console.log('Settings component rendered!');
-
   return (
     <div className="w-full">
       {/* Header */}

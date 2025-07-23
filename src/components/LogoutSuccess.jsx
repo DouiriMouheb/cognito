@@ -9,7 +9,8 @@ const LogoutSuccess = () => {
     // Prevent multiple redirects
     if (redirecting) return;
 
- 
+    // Clear logout flag immediately
+    localStorage.removeItem('logout_in_progress');
 
     // Clear any remaining data (just to be sure)
     try {
