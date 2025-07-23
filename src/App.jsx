@@ -1,6 +1,7 @@
 ﻿import { useAuth } from "react-oidc-context";
 import { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Toaster } from 'react-hot-toast';
 import LoadingScreen from "./components/LoadingScreen";
 import ErrorScreen from "./components/ErrorScreen";
 import LoginScreen from "./components/LoginScreen";
@@ -60,16 +61,24 @@ function App() {
 
   if (auth.isAuthenticated) {
     return (
-      <Router>
-        <Routes>
-          <Route path="/*" element={<Dashboard />} />
-        </Routes>
-      </Router>
+      <>
+        <Router>
+          <Routes>
+            <Route path="/*" element={<Dashboard />} />
+          </Routes>
+        </Router>
+        <Toaster />
+      </>
     );
   }
 
   // Not authenticated - show login screen
-  return <LoginScreen />;
+  return (
+    <>
+      <LoginScreen />
+      <Toaster />
+    </>
+  );
 }
 
 export default App;

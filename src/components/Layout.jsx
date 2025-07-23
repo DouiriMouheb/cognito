@@ -17,6 +17,8 @@ const Layout = ({ children }) => {
     switch (location.pathname) {
       case '/':
         return 'Dashboard';
+      case '/timesheet':
+        return 'Timesheet';
       case '/settings':
         return 'Settings';
       case '/profile':

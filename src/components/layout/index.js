@@ -6,6 +6,7 @@ export { default as UserDashboard } from '../UserDashboard';
 export { default as Layout } from '../Layout';
 export { default as Sidebar } from '../Sidebar';
 export { default as Settings } from '../Settings';
+export { default as Timesheet } from '../Timesheet';
 
 // Future layout components can be added here:
 // export { default as Header } from './Header';

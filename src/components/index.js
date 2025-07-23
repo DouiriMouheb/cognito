@@ -13,6 +13,9 @@ export { default as UserDashboard } from './UserDashboard';
 export { default as Sidebar } from './Sidebar';
 export { default as Layout } from './Layout';
 export { default as Settings } from './Settings';
+export { default as Timesheet } from './Timesheet';
+export { default as ExternalClients } from './ExternalClients';
+export { default as Commessa } from './Commessa';
 
 // Organized category exports
 export * from './auth';
