@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { Modal } from "../common/Modal";
 import { Button } from "../common/Button";
+import { CustomSelect } from "../common/CustomSelect";
 import { showToast } from "../../utils/toast";
-import { 
-  Building, 
-  Users, 
-  MapPin, 
-  Settings, 
-  Activity, 
+import { useAuth } from "react-oidc-context";
+import { externalClientsService } from "../../services/externalClientsService";
+import { organizationService } from "../../services/organizationService";
+import { commessaService } from "../../services/commessaService";
+import {
+  Building,
+  Users,
+  MapPin,
+  Settings,
+  Activity,
   Calendar,
   Clock,
   X
@@ -23,6 +28,8 @@ export const TimeSheetModal = ({
   projects = [],
   activities = [],
 }) => {
+  const auth = useAuth();
+
   const [formData, setFormData] = useState({
     organizationId: "",
     customerId: "",
@@ -34,30 +41,23 @@ export const TimeSheetModal = ({
     endTime: "09:25",
     description: ""
   });
-  
+
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Mock data - replace with actual API calls
-  const organizations = [
-    { id: "", name: "Select an organization..." },
-    { id: "1", name: "Acme Corp" },
-    { id: "2", name: "Tech Solutions Inc" }
-  ];
-  
-  const customers = [
-    { id: "", name: "Select an organization first..." },
-    { id: "1", name: "Client A" },
-    { id: "2", name: "Client B" }
-  ];
-  
-  const processes = [
-    { id: "", name: "Select a process..." },
-    { id: "1", name: "Development" },
-    { id: "2", name: "Testing" },
-    { id: "3", name: "Documentation" }
-  ];
-  
+
+  // API data states
+  const [organizations, setOrganizations] = useState([]);
+  const [customerOptions, setCustomerOptions] = useState([]);
+  const [processOptions, setProcessOptions] = useState([]);
+  const [loadingOrganizations, setLoadingOrganizations] = useState(false);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [loadingProcesses, setLoadingProcesses] = useState(false);
+  const [organizationsLoaded, setOrganizationsLoaded] = useState(false);
+
+  // Cache for customers and processes by organization
+  const [customerCache, setCustomerCache] = useState({});
+  const [processCache, setProcessCache] = useState({});
+
   const processActivities = [
     { id: "", name: "Select a process first..." },
     { id: "1", name: "Frontend Development" },
@@ -65,45 +65,202 @@ export const TimeSheetModal = ({
     { id: "3", name: "Code Review" }
   ];
 
-  // Initialize form data when modal opens
+  // Load organizations only once when modal opens for the first time
   useEffect(() => {
+    if (isOpen && !organizationsLoaded) {
+      loadOrganizations();
+    }
     if (isOpen) {
-      if (timeEntry) {
-        setFormData({
-          organizationId: timeEntry.organizationId || "",
-          customerId: timeEntry.customerId || "",
-          workLocation: timeEntry.workLocation || "Organization Location",
-          processId: timeEntry.processId || "",
-          activityId: timeEntry.activityId || "",
-          date: timeEntry.date || new Date().toISOString().split('T')[0],
-          startTime: timeEntry.startTime || "08:25",
-          endTime: timeEntry.endTime || "09:25",
-          description: timeEntry.description || ""
-        });
-      } else {
-        // Reset to defaults for new entry
-        setFormData({
-          organizationId: "",
-          customerId: "",
-          workLocation: "Organization Location",
-          processId: "",
-          activityId: "",
-          date: new Date().toISOString().split('T')[0],
-          startTime: "08:25",
-          endTime: "09:25",
-          description: ""
-        });
-      }
+      initializeFormData();
       setErrors({});
     }
-  }, [isOpen, timeEntry]);
+  }, [isOpen, timeEntry, organizationsLoaded]);
+
+  // Load customers and processes when organization changes (with caching)
+  useEffect(() => {
+    if (formData.organizationId && formData.organizationId !== "") {
+      // Check cache first for customers
+      if (customerCache[formData.organizationId]) {
+        console.log(`Loading customers from cache for org: ${formData.organizationId}`);
+        setCustomerOptions(customerCache[formData.organizationId]);
+      } else {
+        console.log(`Loading customers from API for org: ${formData.organizationId}`);
+        loadCustomers(formData.organizationId);
+      }
+
+      // Check cache first for processes
+      if (processCache[formData.organizationId]) {
+        console.log(`Loading processes from cache for org: ${formData.organizationId}`);
+        setProcessOptions(processCache[formData.organizationId]);
+      } else {
+        console.log(`Loading processes from API for org: ${formData.organizationId}`);
+        loadProcesses(formData.organizationId);
+      }
+    } else {
+      setCustomerOptions([]);
+      setProcessOptions([]);
+    }
+  }, [formData.organizationId, customerCache, processCache]);
+
+  const loadOrganizations = async () => {
+    try {
+      setLoadingOrganizations(true);
+      const response = await organizationService.getOrganizations();
+      if (response.success) {
+        const orgsWithDefault = [
+          { id: "", code: "", name: "Select an organization..." },
+          ...response.data
+        ];
+        setOrganizations(orgsWithDefault);
+        setOrganizationsLoaded(true);
+
+        // Pre-select first organization if creating new entry and no organization is selected
+        if (!timeEntry && response.data.length > 0 && !formData.organizationId) {
+          const firstOrg = response.data[0];
+          setFormData(prev => ({
+            ...prev,
+            organizationId: firstOrg.code || firstOrg.id
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("Error loading organizations:", error);
+      showToast.error("Failed to load organizations");
+    } finally {
+      setLoadingOrganizations(false);
+    }
+  };
+
+  const loadCustomers = async (organizationCode) => {
+    if (!auth.user?.access_token) {
+      console.warn("No access token available for loading customers");
+      return;
+    }
+
+    try {
+      setLoadingCustomers(true);
+      const response = await externalClientsService.getClientsForOrganization(
+        organizationCode,
+        auth.user.access_token,
+        { limit: 1000 } // Get all customers for dropdown
+      );
+
+      if (response.success) {
+        const customerOptions = response.data.clients.map(client => ({
+          value: client.id,
+          label: client.ragsoc || 'Unknown Client',
+          name: client.ragsoc || 'Unknown Client'
+        }));
+
+        // Cache the results for this organization
+        setCustomerCache(prev => ({
+          ...prev,
+          [organizationCode]: customerOptions
+        }));
+
+        setCustomerOptions(customerOptions);
+      } else {
+        showToast.error(response.error?.message || "Failed to load customers");
+        setCustomerOptions([]);
+      }
+    } catch (error) {
+      console.error("Error loading customers:", error);
+      showToast.error("Failed to load customers from API");
+      setCustomers([{ id: "", name: "Error loading customers" }]);
+    } finally {
+      setLoadingCustomers(false);
+    }
+  };
+
+  const loadProcesses = async (organizationCode) => {
+    if (!auth.user?.access_token) {
+      console.warn("No access token available for loading processes");
+      return;
+    }
+
+    try {
+      setLoadingProcesses(true);
+      const response = await commessaService.getCommesseForOrganization(
+        organizationCode,
+        auth.user.access_token,
+        { limit: 1000 } // Get all processes for dropdown
+      );
+
+      if (response.success) {
+        const processOptions = response.data.commesse.map(commessa => ({
+          value: commessa.id,
+          label: commessa.descrizione || commessa.codice || 'Unknown Process',
+          name: commessa.descrizione || commessa.codice || 'Unknown Process'
+        }));
+
+        // Cache the results for this organization
+        setProcessCache(prev => ({
+          ...prev,
+          [organizationCode]: processOptions
+        }));
+
+        setProcessOptions(processOptions);
+      } else {
+        showToast.error(response.error?.message || "Failed to load processes");
+        setProcessOptions([]);
+      }
+    } catch (error) {
+      console.error("Error loading processes:", error);
+      showToast.error("Failed to load processes from API");
+      setProcesses([{ id: "", name: "Error loading processes" }]);
+    } finally {
+      setLoadingProcesses(false);
+    }
+  };
+
+  const initializeFormData = () => {
+    if (timeEntry) {
+      setFormData({
+        organizationId: timeEntry.organizationId || "",
+        customerId: timeEntry.customerId || "",
+        workLocation: timeEntry.workLocation || "Organization Location",
+        processId: timeEntry.processId || "",
+        activityId: timeEntry.activityId || "",
+        date: timeEntry.date || new Date().toISOString().split('T')[0],
+        startTime: timeEntry.startTime || "08:25",
+        endTime: timeEntry.endTime || "09:25",
+        description: timeEntry.description || ""
+      });
+    } else {
+      // Reset to defaults for new entry
+      setFormData({
+        organizationId: "",
+        customerId: "",
+        workLocation: "Organization Location",
+        processId: "",
+        activityId: "",
+        date: new Date().toISOString().split('T')[0],
+        startTime: "08:25",
+        endTime: "09:25",
+        description: ""
+      });
+    }
+  };
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [field]: value
+      };
+
+      // Clear dependent selections when parent changes
+      if (field === "organizationId") {
+        newData.customerId = "";
+        newData.processId = "";
+        newData.activityId = "";
+      } else if (field === "processId") {
+        newData.activityId = "";
+      }
+
+      return newData;
+    });
+
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
@@ -111,7 +268,7 @@ export const TimeSheetModal = ({
         [field]: ""
       }));
     }
-    
+
     // Notify parent component
     if (onChange) {
       onChange(field, value);
@@ -214,16 +371,20 @@ export const TimeSheetModal = ({
             <select
               value={formData.organizationId}
               onChange={(e) => handleInputChange("organizationId", e.target.value)}
-              disabled={isReadOnly}
+              disabled={isReadOnly || loadingOrganizations}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.organizationId ? "border-red-300" : "border-gray-300"
-              } ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
+              } ${isReadOnly || loadingOrganizations ? "bg-gray-100" : "bg-white"}`}
             >
-              {organizations.map((org) => (
-                <option key={org.id} value={org.id}>
-                  {org.name}
-                </option>
-              ))}
+              {loadingOrganizations ? (
+                <option value="">Loading organizations...</option>
+              ) : (
+                organizations.map((org) => (
+                  <option key={org.id || org.code} value={org.code || org.id}>
+                    {org.name}
+                  </option>
+                ))
+              )}
             </select>
             {errors.organizationId && (
               <p className="mt-1 text-sm text-red-600">{errors.organizationId}</p>
@@ -235,23 +396,23 @@ export const TimeSheetModal = ({
               <Users className="w-4 h-4 mr-1" />
               Customer *
             </label>
-            <select
+            <CustomSelect
               value={formData.customerId}
-              onChange={(e) => handleInputChange("customerId", e.target.value)}
-              disabled={isReadOnly}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.customerId ? "border-red-300" : "border-gray-300"
-              } ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
-            >
-              {customers.map((customer) => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.name}
-                </option>
-              ))}
-            </select>
-            {errors.customerId && (
-              <p className="mt-1 text-sm text-red-600">{errors.customerId}</p>
-            )}
+              onChange={(value) => handleInputChange("customerId", value)}
+              options={customerOptions}
+              placeholder={
+                loadingCustomers ? "Loading customers..." :
+                !formData.organizationId ? "Select an organization first..." :
+                "Search customers..."
+              }
+              searchable={true}
+              clearable={true}
+              disabled={isReadOnly || loadingCustomers || !formData.organizationId}
+              loading={loadingCustomers}
+              error={errors.customerId}
+              icon={Users}
+              emptyMessage="No customers found"
+            />
           </div>
 
           <div>
@@ -281,23 +442,23 @@ export const TimeSheetModal = ({
               <Settings className="w-4 h-4 mr-1" />
               Process *
             </label>
-            <select
+            <CustomSelect
               value={formData.processId}
-              onChange={(e) => handleInputChange("processId", e.target.value)}
-              disabled={isReadOnly}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.processId ? "border-red-300" : "border-gray-300"
-              } ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
-            >
-              {processes.map((process) => (
-                <option key={process.id} value={process.id}>
-                  {process.name}
-                </option>
-              ))}
-            </select>
-            {errors.processId && (
-              <p className="mt-1 text-sm text-red-600">{errors.processId}</p>
-            )}
+              onChange={(value) => handleInputChange("processId", value)}
+              options={processOptions}
+              placeholder={
+                loadingProcesses ? "Loading processes..." :
+                !formData.organizationId ? "Select an organization first..." :
+                "Search processes..."
+              }
+              searchable={true}
+              clearable={true}
+              disabled={isReadOnly || loadingProcesses || !formData.organizationId}
+              loading={loadingProcesses}
+              error={errors.processId}
+              icon={Settings}
+              emptyMessage="No processes found"
+            />
           </div>
 
           <div>
@@ -308,16 +469,20 @@ export const TimeSheetModal = ({
             <select
               value={formData.activityId}
               onChange={(e) => handleInputChange("activityId", e.target.value)}
-              disabled={isReadOnly}
+              disabled={isReadOnly || !formData.processId}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.activityId ? "border-red-300" : "border-gray-300"
-              } ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
+              } ${isReadOnly || !formData.processId ? "bg-gray-100" : "bg-white"}`}
             >
-              {processActivities.map((activity) => (
-                <option key={activity.id} value={activity.id}>
-                  {activity.name}
-                </option>
-              ))}
+              {!formData.processId ? (
+                <option value="">Select a process first...</option>
+              ) : (
+                processActivities.map((activity) => (
+                  <option key={activity.id} value={activity.id}>
+                    {activity.name}
+                  </option>
+                ))
+              )}
             </select>
             {errors.activityId && (
               <p className="mt-1 text-sm text-red-600">{errors.activityId}</p>
