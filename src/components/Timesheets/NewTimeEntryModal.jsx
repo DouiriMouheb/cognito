@@ -5,12 +5,11 @@ import { Input } from "../common/Input";
 import { Button } from "../common/Button";
 import { CustomSelect } from "../common/CustomSelect";
 import { showToast } from "../../utils/toast";
-import {
-  organizationService,
-  customerService,
-  processService,
-  timesheetService,
-} from "../../services";
+import { organizationService } from "../../services/organizationService";
+import { customerService } from "../../services/customerService";
+import { processService } from "../../services/processService";
+import { activityService } from "../../services/activityService";
+import { timesheetService } from "../../services/timesheetService";
 import {
   Building,
   Users,

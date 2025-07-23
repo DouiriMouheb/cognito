@@ -13,18 +13,19 @@ import {
   CalendarDays,
   BarChart3,
 } from "lucide-react";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "react-oidc-context";
 import { Button } from "../common/Button";
 import { ConfirmationModal } from "../common/ConfirmationModal";
 import { EnhancedTimeSheetTable } from "./EnhancedTimesheetTable";
-import { NewTimeEntryModal } from "./NewTimeEntryModal";
+import { TimeSheetModal } from "./TimeSheetModal";
 import { TimesheetCalendarView } from "./TimesheetCalendarView";
 import { TimesheetCalendarView as TimesheetCalendarLandscapeView } from "./TimesheetCalendarView_Enhanced";
 import TimesheetTimeline from "./TimesheetTimeline";
-import { timesheetService } from "../../services/timesheets";
-import { processService } from "../../services/processes";
-import { organizationService } from "../../services/organizations";
-import { customerService } from "../../services/customers";
+import { timesheetService } from "../../services/timesheetService";
+import { processService } from "../../services/processService";
+import { organizationService } from "../../services/organizationService";
+import { customerService } from "../../services/customerService";
+import { activityService } from "../../services/activityService";
 import { showToast } from "../../utils/toast";
 
 export const TimeSheetList = () => {
@@ -61,21 +62,27 @@ export const TimeSheetList = () => {
     hasPrev: false,
   });
 
-  const { user, isInitialized } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
-    // Only load data if user is authenticated and auth is initialized
-    if (isInitialized && user) {
+    // Only load data if user is authenticated and auth is not loading
+    if (!authLoading && user) {
       loadInitialData();
+    } else if (!authLoading && !user) {
+      // If auth is done loading but no user, stop loading
+      setLoading(false);
     }
-  }, [isInitialized, user]);
+  }, [authLoading, user]);
 
   useEffect(() => {
     // Only load time entries if user is authenticated
-    if (isInitialized && user) {
+    if (!authLoading && user) {
       loadTimeEntries();
+    } else if (!authLoading && !user) {
+      // If auth is done loading but no user, stop loading
+      setLoading(false);
     }
-  }, [currentDate, viewMode, isInitialized, user]);
+  }, [currentDate, viewMode, authLoading, user]);
 
   const loadInitialData = async () => {
     try {
@@ -92,9 +99,9 @@ export const TimeSheetList = () => {
 
   const loadOrganizations = async () => {
     try {
-      const response = await organizationService.getUserOrganizations();
+      const response = await organizationService.getActiveOrganizations();
       if (response.success) {
-        setOrganizations(response.data.organizations || []); // Extract organizations array
+        setOrganizations(response.data || []); // Use data directly
       } else {
         console.error("Failed to load organizations:", response);
         showToast.error("Failed to load organizations");
@@ -167,7 +174,7 @@ export const TimeSheetList = () => {
     try {
       const response = await customerService.getCustomers();
       if (response.success) {
-        setCustomers(response.data.customers || []); // Extract customers array
+        setCustomers(response.data || []); // Use data directly
       } else {
         console.error("Failed to load customers:", response);
         showToast.error("Failed to load customers");
@@ -175,6 +182,45 @@ export const TimeSheetList = () => {
     } catch (error) {
       console.error("Error loading customers:", error);
       showToast.error(`Error loading customers: ${error.message}`);
+    }
+  };
+
+  const getDateRangeForView = () => {
+    const date = new Date(currentDate);
+
+    switch (viewMode) {
+      case "daily":
+      case "timeline":
+        return {
+          start: date.toISOString().split("T")[0],
+          end: date.toISOString().split("T")[0],
+        };
+
+      case "weekly":
+        const startOfWeek = new Date(date);
+        startOfWeek.setDate(date.getDate() - date.getDay());
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        return {
+          start: startOfWeek.toISOString().split("T")[0],
+          end: endOfWeek.toISOString().split("T")[0],
+        };
+
+      case "monthly":
+      case "calendar":
+      case "calendarLand":
+        const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+        const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+        return {
+          start: startOfMonth.toISOString().split("T")[0],
+          end: endOfMonth.toISOString().split("T")[0],
+        };
+
+      default:
+        return {
+          start: date.toISOString().split("T")[0],
+          end: date.toISOString().split("T")[0],
+        };
     }
   };
 
@@ -216,6 +262,8 @@ export const TimeSheetList = () => {
           hasNext: false,
           hasPrev: false,
         });
+      } else {
+        setError(response.error || 'Failed to load time entries');
       }
     } catch (err) {
       console.error("Error loading time entries:", err);
@@ -224,41 +272,6 @@ export const TimeSheetList = () => {
       showToast.error(errorMessage);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getDateRangeForView = () => {
-    const date = new Date(currentDate);
-
-    switch (viewMode) {
-      case "daily":
-      case "timeline":
-        return {
-          start: date.toISOString().split("T")[0],
-          end: date.toISOString().split("T")[0],
-        };
-
-      case "weekly":
-        const startOfWeek = new Date(date);
-        startOfWeek.setDate(date.getDate() - date.getDay());
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(startOfWeek.getDate() + 6);
-        return {
-          start: startOfWeek.toISOString().split("T")[0],
-          end: endOfWeek.toISOString().split("T")[0],
-        };
-
-      case "monthly":
-      case "calendar":
-        const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
-        const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-        return {
-          start: startOfMonth.toISOString().split("T")[0],
-          end: endOfMonth.toISOString().split("T")[0],
-        };
-
-      default:
-        return { start: "", end: "" };
     }
   };
 
@@ -289,9 +302,7 @@ export const TimeSheetList = () => {
     setShowTimeEntryModal(true);
   };
 
-  const openTimerStartModal = () => {
-    setShowTimerStartModal(true);
-  };
+
 
   const handleTimeEntrySave = async (entryData) => {
     // Only update state, do not close modal or reload here. Modal handles API and close.
@@ -575,16 +586,20 @@ export const TimeSheetList = () => {
         </div>
 
         {/* Time Entry Modal */}
-        <NewTimeEntryModal
+        <TimeSheetModal
           isOpen={showTimeEntryModal}
           onClose={() => setShowTimeEntryModal(false)}
           timeEntry={selectedTimeEntry}
+          onChange={(field, value) => {
+            setSelectedTimeEntry(prev => ({
+              ...prev,
+              [field]: value
+            }));
+          }}
           onSave={handleTimeEntrySave}
           mode={modalMode}
-          processes={processes}
+          projects={processes}
           activities={activities}
-          organizations={organizations}
-          customers={customers}
         />
 
         {/* Delete Confirmation Modal */}

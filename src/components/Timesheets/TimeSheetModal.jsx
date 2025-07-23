@@ -1,10 +1,17 @@
-// src/components/Timesheets/TimeSheetModal.jsx - Updated version with entry type enforcement
 import React, { useState, useEffect } from "react";
 import { Modal } from "../common/Modal";
-import { Input } from "../common/Input";
 import { Button } from "../common/Button";
 import { showToast } from "../../utils/toast";
-import { Calendar, Clock, Briefcase, Activity } from "lucide-react";
+import { 
+  Building, 
+  Users, 
+  MapPin, 
+  Settings, 
+  Activity, 
+  Calendar,
+  Clock,
+  X
+} from "lucide-react";
 
 export const TimeSheetModal = ({
   isOpen,
@@ -12,666 +19,421 @@ export const TimeSheetModal = ({
   timeEntry,
   onChange,
   onSave,
-  mode,
+  mode = "create",
   projects = [],
   activities = [],
 }) => {
+  const [formData, setFormData] = useState({
+    organizationId: "",
+    customerId: "",
+    workLocation: "Organization Location",
+    processId: "",
+    activityId: "",
+    date: new Date().toISOString().split('T')[0],
+    startTime: "08:25",
+    endTime: "09:25",
+    description: ""
+  });
+  
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Mock data - replace with actual API calls
+  const organizations = [
+    { id: "", name: "Select an organization..." },
+    { id: "1", name: "Acme Corp" },
+    { id: "2", name: "Tech Solutions Inc" }
+  ];
+  
+  const customers = [
+    { id: "", name: "Select an organization first..." },
+    { id: "1", name: "Client A" },
+    { id: "2", name: "Client B" }
+  ];
+  
+  const processes = [
+    { id: "", name: "Select a process..." },
+    { id: "1", name: "Development" },
+    { id: "2", name: "Testing" },
+    { id: "3", name: "Documentation" }
+  ];
+  
+  const processActivities = [
+    { id: "", name: "Select a process first..." },
+    { id: "1", name: "Frontend Development" },
+    { id: "2", name: "Backend Development" },
+    { id: "3", name: "Code Review" }
+  ];
 
-  // New state for entry type selection
-  const [entryType, setEntryType] = useState(""); // "customer_based" or "process_based"
-  const [customers, setCustomers] = useState([]);
-  const [processes, setProcesses] = useState([]);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [selectedProcess, setSelectedProcess] = useState(null);
-  const [filteredProjects, setFilteredProjects] = useState([]);
-  const [filteredActivities, setFilteredActivities] = useState([]);
-
-  const isReadOnly = mode === "view";
-  const isCreating = mode === "create";
-  const isEditing = mode === "edit";
-
-  const title =
-    {
-      create: "Add Manual Time Entry",
-      edit: "Edit Time Entry",
-      view: "View Time Entry",
-    }[mode] || "Time Entry";
-
-  // Reset errors and initialize data when modal opens
+  // Initialize form data when modal opens
   useEffect(() => {
-    setErrors({});
-    setIsSubmitting(false);
     if (isOpen) {
-      loadCustomersAndProcesses();
-      initializeFormData();
-    }
-  }, [isOpen, mode]);
-
-  // Initialize form data based on existing entry or defaults
-  const initializeFormData = () => {
-    if (timeEntry && timeEntry.entryType) {
-      // Editing an existing entry
-      setEntryType(timeEntry.entryType);
-
-      if (timeEntry.entryType === "customer_based" && timeEntry.workProjectId) {
-        const project = projects.find((p) => p.id === timeEntry.workProjectId);
-        if (project && project.customer) {
-          setSelectedCustomer(project.customer);
-        }
-      } else if (
-        timeEntry.entryType === "process_based" &&
-        timeEntry.activityId
-      ) {
-        const activity = activities.find((a) => a.id === timeEntry.activityId);
-        if (activity && activity.process) {
-          setSelectedProcess(activity.process);
-        }
+      if (timeEntry) {
+        setFormData({
+          organizationId: timeEntry.organizationId || "",
+          customerId: timeEntry.customerId || "",
+          workLocation: timeEntry.workLocation || "Organization Location",
+          processId: timeEntry.processId || "",
+          activityId: timeEntry.activityId || "",
+          date: timeEntry.date || new Date().toISOString().split('T')[0],
+          startTime: timeEntry.startTime || "08:25",
+          endTime: timeEntry.endTime || "09:25",
+          description: timeEntry.description || ""
+        });
+      } else {
+        // Reset to defaults for new entry
+        setFormData({
+          organizationId: "",
+          customerId: "",
+          workLocation: "Organization Location",
+          processId: "",
+          activityId: "",
+          date: new Date().toISOString().split('T')[0],
+          startTime: "08:25",
+          endTime: "09:25",
+          description: ""
+        });
       }
-    } else {
-      // New entry - reset everything
-      setEntryType("");
-      setSelectedCustomer(null);
-      setSelectedProcess(null);
+      setErrors({});
+    }
+  }, [isOpen, timeEntry]);
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: ""
+      }));
+    }
+    
+    // Notify parent component
+    if (onChange) {
+      onChange(field, value);
     }
   };
-
-  // Load customers and processes data
-  const loadCustomersAndProcesses = async () => {
-    try {
-      // Extract unique customers from projects
-      const uniqueCustomers = projects.reduce((acc, project) => {
-        if (
-          project.customer &&
-          !acc.find((c) => c.id === project.customer.id)
-        ) {
-          acc.push(project.customer);
-        }
-        return acc;
-      }, []);
-      setCustomers(uniqueCustomers);
-
-      // Load processes from the timer service
-      const response = await timerService.getProjectsAndActivities();
-      if (response.success) {
-        setProcesses(response.data.processes || []);
-      }
-    } catch (error) {
-      console.error("Error loading customers and processes:", error);
-    }
-  };
-
-  // Update filtered projects when customer is selected
-  useEffect(() => {
-    if (entryType === "customer_based" && selectedCustomer) {
-      const customerProjects = projects.filter(
-        (project) =>
-          project.customer && project.customer.id === selectedCustomer.id
-      );
-      setFilteredProjects(customerProjects);
-    } else {
-      setFilteredProjects([]);
-    }
-  }, [selectedCustomer, projects, entryType]);
-
-  // Update filtered activities when process is selected
-  useEffect(() => {
-    if (entryType === "process_based" && selectedProcess) {
-      setFilteredActivities(selectedProcess.activities || []);
-    } else {
-      setFilteredActivities([]);
-    }
-  }, [selectedProcess, entryType]);
 
   const validateForm = () => {
-    const validationErrors = [];
-
-    // Validate entry type
-    if (!entryType) {
-      validationErrors.push("Entry type is required");
+    const newErrors = {};
+    
+    if (!formData.organizationId) {
+      newErrors.organizationId = "Organization is required";
     }
-
-    // Validate based on entry type
-    if (entryType === "customer_based") {
-      if (!timeEntry.workProjectId) {
-        validationErrors.push("Project is required for customer-based entries");
-      }
-      if (timeEntry.activityId) {
-        validationErrors.push("Customer-based entries cannot have an activity");
-      }
-    } else if (entryType === "process_based") {
-      if (!timeEntry.activityId) {
-        validationErrors.push("Activity is required for process-based entries");
-      }
-      if (timeEntry.workProjectId) {
-        validationErrors.push("Process-based entries cannot have a project");
-      }
+    
+    if (!formData.customerId) {
+      newErrors.customerId = "Customer is required";
     }
-
-   
-
-    if (!timeEntry.date) {
-      validationErrors.push("Date is required");
+    
+    if (!formData.processId) {
+      newErrors.processId = "Process is required";
     }
-
-    if (!timeEntry.startTime) {
-      validationErrors.push("Start time is required");
+    
+    if (!formData.activityId) {
+      newErrors.activityId = "Activity is required";
     }
-
-    if (!timeEntry.endTime) {
-      validationErrors.push("End time is required");
+    
+    if (!formData.date) {
+      newErrors.date = "Date is required";
     }
-
-    if (timeEntry.startTime && timeEntry.endTime) {
-      const start = new Date(`${timeEntry.date}T${timeEntry.startTime}`);
-      const end = new Date(`${timeEntry.date}T${timeEntry.endTime}`);
-      if (end <= start) {
-        validationErrors.push("End time must be after start time");
-      }
+    
+    if (!formData.startTime) {
+      newErrors.startTime = "Start time is required";
     }
-
-    if (validationErrors.length > 0) {
-      const errorObject = {};
-      validationErrors.forEach((error) => {
-        if (error.includes("Entry type")) {
-          errorObject.entryType = error;
-        } else if (error.includes("Project")) {
-          errorObject.workProjectId = error;
-        } else if (error.includes("Activity")) {
-          errorObject.activityId = error;
-        } 
-         else if (error.includes("Date")) {
-          errorObject.date = error;
-        } else if (error.includes("Start time")) {
-          errorObject.startTime = error;
-        } else if (error.includes("End time")) {
-          errorObject.endTime = error;
-        } else {
-          errorObject.general = error;
-        }
-      });
-
-      setErrors(errorObject);
-      return false;
+    
+    if (!formData.endTime) {
+      newErrors.endTime = "End time is required";
     }
-
-    setErrors({});
-    return true;
+    
+    if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
+      newErrors.endTime = "End time must be after start time";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (isReadOnly || isSubmitting) return;
-
+  const handleSubmit = async () => {
     if (!validateForm()) {
-      showToast.error("Please fix the errors below and try again.");
       return;
     }
 
     setIsSubmitting(true);
-
+    
     try {
-      // Prepare data for submission with proper entry type structure
-      const submitData = {
-        entryType: entryType,
-        
-        description: timeEntry.description?.trim() || "",
-        date: timeEntry.date,
-        startTime: timeEntry.startTime,
-        endTime: timeEntry.endTime,
-        isManual: true,
-      };
-
-      // Add the appropriate ID based on entry type
-      if (entryType === "customer_based") {
-        submitData.workProjectId = timeEntry.workProjectId;
-      } else if (entryType === "process_based") {
-        submitData.activityId = timeEntry.activityId;
-      }
-
-      await onSave(submitData);
+      await onSave(formData);
+      onClose();
+      showToast.success("Time entry saved successfully!");
     } catch (error) {
-      console.error("Error submitting time entry:", error);
+      console.error("Error saving time entry:", error);
       showToast.error("Failed to save time entry. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleInputChange = (field, value) => {
-    onChange({ ...timeEntry, [field]: value });
-
-    // Clear error for this field when user starts typing
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
-    }
-
-    // Clear general errors
-    if (errors.general) {
-      setErrors((prev) => ({ ...prev, general: "" }));
-    }
-  };
-
-  const handleProjectChange = (projectId) => {
-    // Update timeEntry with selected project
-    onChange({
-      ...timeEntry,
-      workProjectId: projectId,
-      activityId: "", // Clear activity when project changes
-    });
-
-    // Clear errors
-    if (errors.workProjectId) {
-      setErrors((prev) => ({ ...prev, workProjectId: "", activityId: "" }));
-    }
-  };
-
-  const handleActivityChange = (activityId) => {
-    // Update timeEntry with selected activity
-    onChange({
-      ...timeEntry,
-      activityId: activityId,
-      workProjectId: "", // Clear project when activity changes
-    });
-
-    // Clear errors
-    if (errors.activityId) {
-      setErrors((prev) => ({ ...prev, activityId: "", workProjectId: "" }));
-    }
-  };
-
-  // Handle entry type change
-  const handleEntryTypeChange = (type) => {
-    setEntryType(type);
-    setSelectedCustomer(null);
-    setSelectedProcess(null);
-
-    // Clear project and activity selections
-    onChange({
-      ...timeEntry,
-      workProjectId: "",
+  const handleCancel = () => {
+    setFormData({
+      organizationId: "",
+      customerId: "",
+      workLocation: "Organization Location",
+      processId: "",
       activityId: "",
+      date: new Date().toISOString().split('T')[0],
+      startTime: "08:25",
+      endTime: "09:25",
+      description: ""
     });
-
-    // Clear related errors
-    setErrors((prev) => ({
-      ...prev,
-      entryType: "",
-      workProjectId: "",
-      activityId: "",
-    }));
+    setErrors({});
+    onClose();
   };
 
-  // Handle customer selection
-  const handleCustomerChange = (customerId) => {
-    const customer = customers.find((c) => c.id === customerId);
-    setSelectedCustomer(customer);
-
-    // Clear project selection
-    onChange({
-      ...timeEntry,
-      workProjectId: "",
-    });
-  };
-
-  // Handle process selection
-  const handleProcessChange = (processId) => {
-    const process = processes.find((p) => p.id === processId);
-    setSelectedProcess(process);
-
-    // Clear activity selection
-    onChange({
-      ...timeEntry,
-      activityId: "",
-    });
-  };
-
-  // Get current date for default
-  const today = new Date().toISOString().split("T")[0];
-
-  // Parse existing time entry data for editing
-  const getDisplayValues = () => {
-    if (!timeEntry) return { date: today, startTime: "", endTime: "" };
-
-    // If editing an existing entry, extract date and time components
-    if (timeEntry.startTime && timeEntry.endTime && !timeEntry.date) {
-      const startDate = new Date(timeEntry.startTime);
-      const endDate = new Date(timeEntry.endTime);
-
-      return {
-        date: startDate.toISOString().split("T")[0],
-        startTime: startDate.toTimeString().slice(0, 5),
-        endTime: endDate.toTimeString().slice(0, 5),
-      };
-    }
-
-    // For new entries or entries with separate date/time
-    return {
-      date: timeEntry.date || today,
-      startTime: timeEntry.startTime || "",
-      endTime: timeEntry.endTime || "",
-    };
-  };
-
-  const displayValues = getDisplayValues();
+  const isReadOnly = mode === "view";
+  const title = mode === "create" ? "Add Time Entry" : mode === "edit" ? "Edit Time Entry" : "View Time Entry";
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
-      title={title}
-      footer={
-        !isReadOnly && (
-          <>
-            <Button
-              variant="secondary"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting ? (
-                <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                  {isCreating ? "Creating..." : "Saving..."}
-                </div>
-              ) : isCreating ? (
-                "Create Entry"
-              ) : (
-                "Save Changes"
-              )}
-            </Button>
-          </>
-        )
-      }
+      onClose={handleCancel}
+      title=""
+      size="lg"
+      className="max-w-2xl"
     >
-      <div className="space-y-6 max-h-96 overflow-y-auto">
-        {/* General Error Display */}
-        {errors.general && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-600">{errors.general}</p>
-          </div>
-        )}
-
-        {/* Task Information */}
-        <div className="space-y-4">
-          
-
+      <div className="p-6 space-y-6">
+        {/* Row 1: Organization, Customer, Work Location */}
+        <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
+            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <Building className="w-4 h-4 mr-1" />
+              Organization *
             </label>
-            <textarea
-              value={timeEntry?.description || ""}
-              onChange={(e) => handleInputChange("description", e.target.value)}
+            <select
+              value={formData.organizationId}
+              onChange={(e) => handleInputChange("organizationId", e.target.value)}
               disabled={isReadOnly}
-              rows={3}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Add more details about what you worked on..."
-            />
-          </div>
-        </div>
-
-        {/* Entry Type Selection */}
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Entry Type *
-            </label>
-            <div className="relative">
-              <select
-                value={entryType}
-                onChange={(e) => handleEntryTypeChange(e.target.value)}
-                disabled={isReadOnly}
-                className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                  errors.entryType ? "border-red-300" : "border-gray-300"
-                } ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
-              >
-                <option value="">Choose entry type...</option>
-                <option value="customer_based">Customer Project</option>
-                <option value="process_based">Process Activity</option>
-              </select>
-              <Activity className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-            </div>
-            {errors.entryType && (
-              <p className="mt-1 text-sm text-red-600">{errors.entryType}</p>
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.organizationId ? "border-red-300" : "border-gray-300"
+              } ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
+            >
+              {organizations.map((org) => (
+                <option key={org.id} value={org.id}>
+                  {org.name}
+                </option>
+              ))}
+            </select>
+            {errors.organizationId && (
+              <p className="mt-1 text-sm text-red-600">{errors.organizationId}</p>
             )}
-            <p className="mt-1 text-xs text-gray-500">
-              {entryType === "customer_based"
-                ? "Track time for customer projects and deliverables"
-                : entryType === "process_based"
-                ? "Track time for internal processes and activities"
-                : "Select whether this is customer work or internal process work"}
-            </p>
           </div>
 
-          {/* Customer-based Selection Flow */}
-          {entryType === "customer_based" && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Customer *
-                </label>
-                <div className="relative">
-                  <select
-                    value={selectedCustomer?.id || ""}
-                    onChange={(e) => handleCustomerChange(e.target.value)}
-                    disabled={isReadOnly}
-                    className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                      errors.customerId ? "border-red-300" : "border-gray-300"
-                    } ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
-                  >
-                    <option value="">Select a customer...</option>
-                    {customers.map((customer) => (
-                      <option key={customer.id} value={customer.id}>
-                        {customer.name}
-                      </option>
-                    ))}
-                  </select>
-                  <Briefcase className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                </div>
-                {errors.customerId && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors.customerId}
-                  </p>
-                )}
-              </div>
+          <div>
+            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <Users className="w-4 h-4 mr-1" />
+              Customer *
+            </label>
+            <select
+              value={formData.customerId}
+              onChange={(e) => handleInputChange("customerId", e.target.value)}
+              disabled={isReadOnly}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.customerId ? "border-red-300" : "border-gray-300"
+              } ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
+            >
+              {customers.map((customer) => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.name}
+                </option>
+              ))}
+            </select>
+            {errors.customerId && (
+              <p className="mt-1 text-sm text-red-600">{errors.customerId}</p>
+            )}
+          </div>
 
-              {selectedCustomer && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Project *
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={timeEntry?.workProjectId || ""}
-                      onChange={(e) => handleProjectChange(e.target.value)}
-                      disabled={isReadOnly}
-                      className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                        errors.workProjectId
-                          ? "border-red-300"
-                          : "border-gray-300"
-                      } ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
-                    >
-                      <option value="">Select a project...</option>
-                      {filteredProjects.map((project) => (
-                        <option key={project.id} value={project.id}>
-                          {project.name}
-                        </option>
-                      ))}
-                    </select>
-                    <Briefcase className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                  </div>
-                  {errors.workProjectId && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {errors.workProjectId}
-                    </p>
-                  )}
-                </div>
-              )}
-            </>
-          )}
-
-          {/* Process-based Selection Flow */}
-          {entryType === "process_based" && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Process *
-                </label>
-                <div className="relative">
-                  <select
-                    value={selectedProcess?.id || ""}
-                    onChange={(e) => handleProcessChange(e.target.value)}
-                    disabled={isReadOnly}
-                    className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                      errors.processId ? "border-red-300" : "border-gray-300"
-                    } ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
-                  >
-                    <option value="">Select a process...</option>
-                    {processes.map((process) => (
-                      <option key={process.id} value={process.id}>
-                        {process.name}
-                      </option>
-                    ))}
-                  </select>
-                  <Activity className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                </div>
-                {errors.processId && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors.processId}
-                  </p>
-                )}
-              </div>
-
-              {selectedProcess && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Activity *
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={timeEntry?.activityId || ""}
-                      onChange={(e) => handleActivityChange(e.target.value)}
-                      disabled={isReadOnly}
-                      className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                        errors.activityId ? "border-red-300" : "border-gray-300"
-                      } ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
-                    >
-                      <option value="">Select an activity...</option>
-                      {filteredActivities.map((activity) => (
-                        <option key={activity.id} value={activity.id}>
-                          {activity.name}
-                        </option>
-                      ))}
-                    </select>
-                    <Activity className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                  </div>
-                  {errors.activityId && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {errors.activityId}
-                    </p>
-                  )}
-                </div>
-              )}
-            </>
-          )}
+          <div>
+            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <MapPin className="w-4 h-4 mr-1" />
+              Work Location
+            </label>
+            <select
+              value={formData.workLocation}
+              onChange={(e) => handleInputChange("workLocation", e.target.value)}
+              disabled={isReadOnly}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                isReadOnly ? "bg-gray-100" : "bg-white"
+              } border-gray-300`}
+            >
+              <option value="Organization Location">Organization Location</option>
+              <option value="Remote">Remote</option>
+              <option value="Client Site">Client Site</option>
+            </select>
+          </div>
         </div>
 
-        {/* Date and Time */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Row 2: Process, Activity, Date */}
+        <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <Settings className="w-4 h-4 mr-1" />
+              Process *
+            </label>
+            <select
+              value={formData.processId}
+              onChange={(e) => handleInputChange("processId", e.target.value)}
+              disabled={isReadOnly}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.processId ? "border-red-300" : "border-gray-300"
+              } ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
+            >
+              {processes.map((process) => (
+                <option key={process.id} value={process.id}>
+                  {process.name}
+                </option>
+              ))}
+            </select>
+            {errors.processId && (
+              <p className="mt-1 text-sm text-red-600">{errors.processId}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <Activity className="w-4 h-4 mr-1" />
+              Activity *
+            </label>
+            <select
+              value={formData.activityId}
+              onChange={(e) => handleInputChange("activityId", e.target.value)}
+              disabled={isReadOnly}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.activityId ? "border-red-300" : "border-gray-300"
+              } ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
+            >
+              {processActivities.map((activity) => (
+                <option key={activity.id} value={activity.id}>
+                  {activity.name}
+                </option>
+              ))}
+            </select>
+            {errors.activityId && (
+              <p className="mt-1 text-sm text-red-600">{errors.activityId}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <Calendar className="w-4 h-4 mr-1" />
               Date *
             </label>
-            <div className="relative">
-              <input
-                type="date"
-                value={displayValues.date}
-                onChange={(e) => handleInputChange("date", e.target.value)}
-                disabled={isReadOnly}
-                max={today}
-                className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                  errors.date ? "border-red-300" : "border-gray-300"
-                } ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
-              />
-              <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-            </div>
+            <input
+              type="date"
+              value={formData.date}
+              onChange={(e) => handleInputChange("date", e.target.value)}
+              disabled={isReadOnly}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.date ? "border-red-300" : "border-gray-300"
+              } ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
+            />
             {errors.date && (
               <p className="mt-1 text-sm text-red-600">{errors.date}</p>
             )}
           </div>
+        </div>
 
+        {/* Row 3: Start Time, End Time */}
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <Clock className="w-4 h-4 mr-1" />
               Start Time *
             </label>
-            <div className="relative">
-              <input
-                type="time"
-                value={displayValues.startTime}
-                onChange={(e) => handleInputChange("startTime", e.target.value)}
-                disabled={isReadOnly}
-                className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                  errors.startTime ? "border-red-300" : "border-gray-300"
-                } ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
-              />
-              <Clock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-            </div>
+            <input
+              type="time"
+              value={formData.startTime}
+              onChange={(e) => handleInputChange("startTime", e.target.value)}
+              disabled={isReadOnly}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.startTime ? "border-red-300" : "border-gray-300"
+              } ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
+            />
             {errors.startTime && (
               <p className="mt-1 text-sm text-red-600">{errors.startTime}</p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <Clock className="w-4 h-4 mr-1" />
               End Time *
             </label>
-            <div className="relative">
-              <input
-                type="time"
-                value={displayValues.endTime}
-                onChange={(e) => handleInputChange("endTime", e.target.value)}
-                disabled={isReadOnly}
-                className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                  errors.endTime ? "border-red-300" : "border-gray-300"
-                } ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
-              />
-              <Clock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-            </div>
+            <input
+              type="time"
+              value={formData.endTime}
+              onChange={(e) => handleInputChange("endTime", e.target.value)}
+              disabled={isReadOnly}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.endTime ? "border-red-300" : "border-gray-300"
+              } ${isReadOnly ? "bg-gray-100" : "bg-white"}`}
+            />
             {errors.endTime && (
               <p className="mt-1 text-sm text-red-600">{errors.endTime}</p>
             )}
           </div>
         </div>
 
-        {/* Read-only info for existing entries */}
-        {!isCreating && timeEntry && (
-          <div className="pt-4 border-t border-gray-200">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">
-              Entry Information
-            </h4>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-500">Created:</span>
-                <p className="font-medium">
-                  {timeEntry.createdAt
-                    ? new Date(timeEntry.createdAt).toLocaleString()
-                    : "N/A"}
-                </p>
-              </div>
-              {timeEntry.isManual && (
-                <div className="col-span-2">
-                  <span className="text-gray-500">Type:</span>
-                  <p className="font-medium text-purple-600">Manual Entry</p>
+        {/* Task Description */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Task Description
+          </label>
+          <textarea
+            value={formData.description}
+            onChange={(e) => handleInputChange("description", e.target.value)}
+            disabled={isReadOnly}
+            rows={4}
+            placeholder="Optional task description"
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${
+              isReadOnly ? "bg-gray-100" : "bg-white"
+            } border-gray-300`}
+          />
+        </div>
+
+        {/* Footer Buttons */}
+        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+          <Button
+            variant="secondary"
+            onClick={handleCancel}
+            disabled={isSubmitting}
+            className="px-4 py-2"
+          >
+            <X className="w-4 h-4 mr-1" />
+            Cancel
+          </Button>
+
+          {!isReadOnly && (
+            <Button
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {isSubmitting ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                  Creating...
                 </div>
+              ) : (
+                <>
+                  <Calendar className="w-4 h-4 mr-1" />
+                  Create
+                </>
               )}
-            </div>
-          </div>
-        )}
+            </Button>
+          )}
+        </div>
       </div>
     </Modal>
   );

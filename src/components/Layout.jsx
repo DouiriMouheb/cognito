@@ -19,6 +19,8 @@ const Layout = ({ children }) => {
         return 'Dashboard';
       case '/apis':
         return 'APIs';
+      case '/timesheets':
+        return 'Timesheets';
       case '/settings':
         return 'Settings';
       case '/profile':
