@@ -155,50 +155,7 @@ const ExternalClients = () => {
     }
   };
 
-  const handleSyncOrganization = async () => {
-    if (!selectedOrganization) {
-      showToast.error("Please select an organization first");
-      return;
-    }
-
-    if (!auth.user?.access_token) {
-      showToast.error("Authentication token not available");
-      return;
-    }
-
-    try {
-      setSyncing(true);
-      setSyncStatus("Initializing sync...");
-
-      // Use promise-based toast for better UX
-      const syncPromise = externalClientsService.syncOrganization(
-        selectedOrganization,
-        auth.user.access_token
-      );
-
-      const result = await showToast.promise(syncPromise, {
-        loading: 'Syncing organization data...',
-        success: (data) => data.success ? data.message : 'Sync completed!',
-        error: (err) => err.message || 'Sync failed'
-      });
-
-      if (result.success) {
-        setSyncStatus(`Sync completed: ${result.data.synced} clients synced, ${result.data.updated} updated`);
-        // Refresh the client list to show any changes
-        loadClients(1);
-      } else {
-        setSyncStatus("Sync failed");
-      }
-    } catch (error) {
-      console.error("Sync error:", error);
-      showToast.error("Failed to sync organization data");
-      setSyncStatus("Sync failed");
-    } finally {
-      setSyncing(false);
-      // Clear status after 5 seconds
-      setTimeout(() => setSyncStatus(null), 5000);
-    }
-  };
+ 
 
   const selectedOrgData = organizations.find(org => org.code === selectedOrganization);
 
@@ -257,16 +214,7 @@ const ExternalClients = () => {
                 <span>Refresh</span>
               </button>
 
-              <button
-                onClick={handleSyncOrganization}
-                disabled={loading || syncing}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-              >
-                <svg className={`w-4 h-4 ${syncing ? 'animate-pulse' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
-                </svg>
-                <span>{syncing ? 'Syncing...' : 'Sync to DB'}</span>
-              </button>
+           
             </div>
           )}
         </div>
