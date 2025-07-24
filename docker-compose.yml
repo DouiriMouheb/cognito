@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  client:
+    build: .
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    environment:
+      # Add environment variables here if needed
+    # volumes:
+    #   - ./dist:/srv # Uncomment to serve updated static files without rebuilding

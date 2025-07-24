@@ -8,8 +8,8 @@ const Sidebar = ({ isOpen, onToggle }) => {
   const auth = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile } = useUserProfile();
-  const [showUserModal, setShowUserModal] = useState(false);
+  // const { profile } = useUserProfile();
+  // const [showUserModal, setShowUserModal] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -92,28 +92,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
           </button>
         </div>
 
-        {/* User Info - Clickable */}
-        <div className="p-6 border-b border-gray-200">
-          <button
-            onClick={() => setShowUserModal(true)}
-            className="w-full flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-              <span className="text-blue-600 font-semibold text-lg">
-                {profile.name ? profile.name.charAt(0).toUpperCase() : profile.email?.charAt(0).toUpperCase() || 'U'}
-              </span>
-            </div>
-            <div className="flex-1 min-w-0 text-left">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {profile.name || 'User'}
-              </p>
-              <p className="text-sm text-gray-500 truncate">
-                {profile.email}
-              </p>
-              <p className="text-xs text-blue-600 mt-1">Click to view profile</p>
-            </div>
-          </button>
-        </div>
+        {/* User Info removed from Sidebar */}
 
         {/* Navigation Menu */}
         <nav className="flex-1 p-6">
@@ -170,11 +149,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
         </div>
       </div>
 
-      {/* User Info Modal */}
-      <UserInfoModal
-        isOpen={showUserModal}
-        onClose={() => setShowUserModal(false)}
-      />
+      {/* UserInfoModal removed from Sidebar */}
     </>
   );
 };

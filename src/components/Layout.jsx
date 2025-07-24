@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useUserProfile } from '../hooks/useApi';
+import UserInfoModal from './UserInfoModal';
 
 const Layout = ({ children }) => {
+  const [showUserModal, setShowUserModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const { profile } = useUserProfile();
@@ -57,8 +59,9 @@ const Layout = ({ children }) => {
 
             {/* Right side - User info */}
             <div className="flex items-center space-x-4">
-              <div className="hidden sm:flex items-center space-x-3">
-                <div className="text-right">
+              {/* User info (desktop and mobile) */}
+              <div className="flex items-center space-x-3">
+                <div className="text-right hidden sm:block">
                   <p className="text-sm font-medium text-gray-900">
                     {profile.name || 'User'}
                   </p>
@@ -66,28 +69,34 @@ const Layout = ({ children }) => {
                     {profile.email}
                   </p>
                 </div>
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-blue-600 font-semibold text-sm">
+                <button
+                  onClick={() => setShowUserModal(true)}
+                  className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  title="View profile"
+                >
+                  <span className="text-blue-600 font-semibold text-sm sm:text-sm text-xs">
                     {profile.name ? profile.name.charAt(0).toUpperCase() : profile.email?.charAt(0).toUpperCase() || 'U'}
                   </span>
-                </div>
+                </button>
               </div>
 
               {/* Mobile menu button */}
               <button
                 onClick={toggleSidebar}
                 className="sm:hidden p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                aria-label="Open sidebar menu"
               >
-                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-blue-600 font-semibold text-xs">
-                    {profile.name ? profile.name.charAt(0).toUpperCase() : profile.email?.charAt(0).toUpperCase() || 'U'}
-                  </span>
-                </div>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
               </button>
             </div>
           </div>
         </div>
       </header>
+
+      {/* User Info Modal */}
+      <UserInfoModal isOpen={showUserModal} onClose={() => setShowUserModal(false)} />
 
       {/* Main Content Area - Scrollable */}
       <main className="flex-1 overflow-hidden">
