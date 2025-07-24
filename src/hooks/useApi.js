@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from 'react-oidc-context';
+import { userService } from '../services/userService';
 import apiService from '../services/apiService';
 
 // Custom hook for making API calls with authentication
@@ -93,6 +94,172 @@ export const useUserProfile = () => {
       const userScopes = auth.user?.profile?.scope?.split(' ') || [];
       return userScopes.includes(scope);
     }
+  };
+};
+
+// Hook for Sinergia user API
+export const useSinergiaUser = () => {
+  const auth = useAuth();
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [sinergiaUserId, setSinergiaUserId] = useState(null);
+
+  // Get current user data
+  const getCurrentUser = async () => {
+    if (!auth.user) {
+      setError('No authenticated user');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await userService.getCurrentUser(auth.user);
+
+      if (result.success) {
+        setUserData(result.data);
+        // Extract and cache user ID
+        if (result.data?.data?.id) {
+          setSinergiaUserId(result.data.data.id.toString());
+        }
+      } else {
+        setError(result.error?.message || 'Failed to fetch user data');
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get user by Cognito ID
+  const getUserByCognitoId = async (cognitoId) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await userService.getUserByCognitoId(cognitoId, auth.user?.access_token);
+
+      if (result.success) {
+        setUserData(result.data);
+        return result.data;
+      } else {
+        setError(result.error?.message || 'Failed to fetch user data');
+        return null;
+      }
+    } catch (err) {
+      setError(err.message);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update user data
+  const updateUser = async (cognitoId, userData) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await userService.updateUser(cognitoId, userData, auth.user?.access_token);
+
+      if (result.success) {
+        setUserData(result.data);
+        return result.data;
+      } else {
+        setError(result.error?.message || 'Failed to update user');
+        return null;
+      }
+    } catch (err) {
+      setError(err.message);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get Sinergia user ID (with caching)
+  const getSinergiaUserId = async () => {
+    try {
+      // Return cached ID if available
+      if (sinergiaUserId) {
+        return sinergiaUserId;
+      }
+
+      // Check service cache first
+      const cachedId = userService.getCachedUserId();
+      if (cachedId) {
+        setSinergiaUserId(cachedId);
+        return cachedId;
+      }
+
+      // If no cache and no current user context, return null
+      if (!auth.user?.profile?.sub) {
+        console.warn('No authenticated user available for ID lookup');
+        return null;
+      }
+
+      // Fetch from API
+      const result = await userService.getSinergiaUserId(
+        auth.user.profile.sub,
+        auth.user.access_token
+      );
+
+      if (result.success) {
+        setSinergiaUserId(result.userId);
+        return result.userId;
+      } else {
+        console.error('Failed to get Sinergia user ID:', result.error);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error in getSinergiaUserId:', error);
+      return null;
+    }
+  };
+
+  // Clear cache on logout
+  const clearUserCache = () => {
+    userService.clearCache();
+    setSinergiaUserId(null);
+    setUserData(null);
+    setError(null);
+  };
+
+  // Auto-load current user when auth changes
+  useEffect(() => {
+    if (auth.isAuthenticated && auth.user) {
+      getCurrentUser();
+      // Also try to load cached user ID
+      const cachedId = userService.getCachedUserId();
+      if (cachedId) {
+        setSinergiaUserId(cachedId);
+      }
+    } else {
+      // Clear cache when user logs out
+      clearUserCache();
+    }
+  }, [auth.isAuthenticated, auth.user]);
+
+  return {
+    userData,
+    loading,
+    error,
+    getCurrentUser,
+    getUserByCognitoId,
+    updateUser,
+    getSinergiaUserId,
+    clearUserCache,
+    // Helper to get Cognito ID from current user
+    cognitoId: auth.user?.profile?.sub,
+    // Sinergia user ID (cached)
+    sinergiaUserId,
+    // Helper to check if user data is loaded
+    isLoaded: !!userData && !loading,
+    // Helper to check if cache is valid
+    isCacheValid: userService.isCacheValid()
   };
 };
 

@@ -27,7 +27,7 @@ const Layout = ({ children }) => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-br from-green-50 to-emerald-100">
+    <div className="h-screen flex flex-col ">
       {/* Sidebar */}
       <Sidebar isOpen={sidebarOpen} onToggle={toggleSidebar} />
 
