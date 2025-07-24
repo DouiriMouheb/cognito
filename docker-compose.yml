@@ -1,24 +1,23 @@
 version: '3.8'
 services:
   client:
-    build: .
-    restart: unless-stopped
-    # Environment variables for build-time (optional)
-    # environment:
-    #   VITE_API_BASE_URL: https://dcodelabs.studio/
-    #   ...
+    image: node:20-alpine
+    working_dir: /app
     volumes:
+      - ./:/app
       - client_build:/app/dist
+    command: sh -c "npm ci && npm run build && cp -r dist/* /app/dist/"
+    environment:
+      - VITE_API_BASE_URL=https://dcodelabs.studio/
+    restart: unless-stopped
 
   caddy:
-    image: caddy:2-alpine
+    build: .
     ports:
       - "80:80"
       - "443:443"
     restart: unless-stopped
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - client_build:/srv
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
