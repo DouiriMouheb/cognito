@@ -5,7 +5,10 @@ services:
     ports:
       - "80:80"
     restart: unless-stopped
-    environment:
-      # Add environment variables here if needed
+    environment: {}
+    # Add environment variables as key-value pairs if needed, e.g.:
+    # environment:
+    #   VITE_API_BASE_URL: https://api.example.com
+    #   VITE_COGNITO_CLIENT_ID:4iuqfcq2ch647elek55lir09uo
     # volumes:
     #   - ./dist:/srv # Uncomment to serve updated static files without rebuilding
