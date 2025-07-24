@@ -359,11 +359,11 @@ export const TimeSheetModal = ({
       onClose={handleCancel}
       title=""
       size="lg"
-      className="max-w-2xl"
+      className="max-w-2xl mx-4 sm:mx-auto w-full sm:max-w-2xl"
     >
-      <div className="p-6 space-y-6">
-        {/* Row 1: Organization, Customer, Work Location */}
-        <div className="grid grid-cols-3 gap-4">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+        {/* Row 1: Organization, Customer, Work Location - Stack on mobile */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
           <div>
             <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
@@ -411,30 +411,7 @@ export const TimeSheetModal = ({
             />
           </div>
 
-          <div>
-            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-              <MapPin className="w-4 h-4 mr-1" />
-              Work Location *
-            </label>
-            <CustomSelect
-              value={formData.workLocation}
-              onChange={(value) => handleInputChange("workLocation", value)}
-              options={[
-                { value: "Organization Location", label: "Office", name: "Organization Location" },
-                { value: "Remote", label: "Remote", name: "Remote" },
-                { value: "Client Site", label: "Client Site", name: "Client Site" }
-              ]}
-              placeholder=" "
-              disabled={isReadOnly}
-              icon={MapPin}
-              emptyMessage="No work locations available"
-            />
-          </div>
-        </div>
-
-        {/* Row 2: Comessa, Activity, Date */}
-        <div className="grid grid-cols-3 gap-4">
-          <div>
+        <div>
             <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
               <Settings className="w-4 h-4 mr-1" />
               Comessa *
@@ -457,9 +434,11 @@ export const TimeSheetModal = ({
               emptyMessage="No processes found"
             />
           </div>
+        </div>
 
-
-
+        {/* Row 2: Process, Activity, Date - Stack on mobile */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        
           <div>   <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
             <Calendar className="w-4 h-4 mr-1" />
             Date *
@@ -474,10 +453,27 @@ export const TimeSheetModal = ({
               error={errors.date}
             />
           </div>
-        </div>
-
-        {/* Row 3: Start Time, End Time */}
-        <div className="grid grid-cols-2 gap-4">
+              <div>
+            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <MapPin className="w-4 h-4 mr-1" />
+              Work Location *
+            </label>
+            <CustomSelect
+              value={formData.workLocation}
+              onChange={(value) => handleInputChange("workLocation", value)}
+              options={[
+                { value: "Organization Location", label: "Office", name: "Organization Location" },
+                { value: "Remote", label: "Remote", name: "Remote" },
+                { value: "Client Site", label: "Client Site", name: "Client Site" }
+              ]}
+              placeholder=" "
+              disabled={isReadOnly}
+              icon={MapPin}
+              emptyMessage="No work locations available"
+            />
+          </div>
+        {/* Time inputs - Stack on mobile */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
               <Clock className="w-4 h-4 mr-1" />
@@ -510,6 +506,10 @@ export const TimeSheetModal = ({
             />
           </div>
         </div>
+        </div>
+
+        {/* Row 3: Start Time, End Time */}
+     
 
         {/* Task Description */}
         <div>
@@ -524,13 +524,13 @@ export const TimeSheetModal = ({
           />
         </div>
 
-        {/* Footer Buttons */}
-        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+        {/* Footer Buttons - Stack on mobile */}
+        <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-4 border-t border-gray-200">
           <Button
             variant="secondary"
             onClick={handleCancel}
             disabled={isSubmitting}
-            className="px-4 py-2"
+            className="w-full sm:w-auto px-4 py-2"
           >
             <X className="w-4 h-4 mr-1" />
             Cancel
@@ -540,7 +540,7 @@ export const TimeSheetModal = ({
             <Button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white"
+              className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white"
             >
               {isSubmitting ? (
                 <div className="flex items-center">
