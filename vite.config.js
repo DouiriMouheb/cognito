@@ -7,8 +7,8 @@ export default defineConfig({
   plugins: [react(),tailwindcss(),VitePWA({
     registerType: 'autoUpdate',
     manifest: {
-      name: 'Sinergia',
-      short_name: 'Sinapp',
+      name: 'Rendicontazione',
+      short_name: 'Rendicontazione',
       start_url: '/',
       display: 'standalone',
       background_color: '#ffffff',
