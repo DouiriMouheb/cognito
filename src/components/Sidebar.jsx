@@ -97,23 +97,25 @@ const Sidebar = ({ isOpen, onToggle }) => {
         {/* Navigation Menu */}
         <nav className="flex-1 p-6">
           <div className="space-y-2">
-            {/* APIs Link */}
-            <button
-              onClick={() => {
-                navigate('/apis');
-                onToggle();
-              }}
-              className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                location.pathname === '/apis'
-                  ? 'text-green-700 bg-green-50'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-              APIs
-            </button>
+                            {/* APIs Link - Disabled */}
+                            {/*
+                            <button
+                              onClick={() => {
+                                navigate('/apis');
+                                onToggle();
+                              }}
+                              className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                                location.pathname === '/apis'
+                                  ? 'text-green-700 bg-green-50'
+                                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                              }`}
+                            >
+                              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                              </svg>
+                              APIs
+                            </button>
+                            */}
 
             {/* Timesheets Link */}
             <button

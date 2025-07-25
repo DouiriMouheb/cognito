@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Clock, User, FileText } from "lucide-react";
 import { Button } from "../common/Button";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -142,8 +142,30 @@ const TimesheetTimeline = ({
 
                 {/* Card container */}
                 <div className={`w-5/12 ${isLeft ? "pr-8" : "pl-8"}`}>
+                  {/* Mobile summary only on small screens, styled as a card with icons */}
+                  <div className="sm:hidden mb-2 p-3 rounded-lg shadow bg-white border border-gray-200 flex flex-col gap-1">
+                    <div className="flex items-center gap-1 text-xs font-semibold text-gray-700 mb-1">
+                      <Clock className="w-4 h-4 text-black-400" />
+                      {formatTime(entry.startTime)} - {formatTime(entry.endTime)}
+                    </div>
+                    <div className="flex items-center gap-1 justify-start mb-1">
+                      <User className="w-4 h-4 text-black-400" />
+                      <span className="bg-gray-100 text-black-700 rounded-full px-2 py-1 text-xs font-bold">
+                        {(getCustomerName(entry)?.split(' ').map(n => n[0]).join('.').toUpperCase()) || 'C'}
+                      </span>
+                    </div>
+                    {entry.description && (
+                      <span className="flex items-center gap-1 text-xs text-gray-500 truncate">
+                        <FileText className="w-4 h-4 text-gray-400" />
+                        {entry.description.length > 20
+                          ? entry.description.slice(0, 20) + '...'
+                          : entry.description}
+                      </span>
+                    )}
+                  </div>
+                  {/* Full card only on sm and up */}
                   <div
-                    className={`transform transition-transform hover:scale-105 ${
+                    className={`hidden sm:block transform transition-transform hover:scale-105 ${
                       isLeft ? "hover:translate-x-2" : "hover:-translate-x-2"
                     }`}
                   >

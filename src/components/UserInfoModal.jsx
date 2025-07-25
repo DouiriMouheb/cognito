@@ -71,121 +71,35 @@ const UserInfoModal = ({ isOpen, onClose }) => {
           </div>
         )}
 
-        {/* User Information Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Cognito Information */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-center space-x-2 mb-3">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                <User className="w-4 h-4 text-blue-600" />
-              </div>
-              <h4 className="font-medium text-blue-900">Cognito Profile</h4>
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center space-x-2">
-                <Hash className="w-4 h-4 text-blue-600" />
-                <span className="text-blue-800">ID:</span>
-                <span className="text-blue-900 font-mono text-xs">{cognitoId || 'N/A'}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Mail className="w-4 h-4 text-blue-600" />
-                <span className="text-blue-800">Email:</span>
-                <span className="text-blue-900">{cognitoUser.email || 'N/A'}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <User className="w-4 h-4 text-blue-600" />
-                <span className="text-blue-800">Name:</span>
-                <span className="text-blue-900">{cognitoUser.name || 'N/A'}</span>
-              </div>
-            </div>
+        {/* Simple User Info Only: ID, Name, Email, Phone */}
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Hash className="w-4 h-4 text-gray-600" />
+            <span className="text-gray-800 font-medium">ID:</span>
+            <span className="text-gray-900 font-mono text-xs">{sinergiaUser.id || cognitoId || 'N/A'}</span>
           </div>
-
-          {/* Sinergia Information */}
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-center space-x-2 mb-3">
-              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-4 h-4 text-green-600" />
-              </div>
-              <h4 className="font-medium text-green-900">Sinergia Profile</h4>
-              {isLoaded && (
-                <div className="ml-auto">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                </div>
-              )}
-            </div>
-            
-            {isLoaded && sinergiaUser ? (
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center space-x-2">
-                  <Hash className="w-4 h-4 text-green-600" />
-                  <span className="text-green-800">ID:</span>
-                  <span className="text-green-900 font-mono">{sinergiaUser.id || 'N/A'}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Mail className="w-4 h-4 text-green-600" />
-                  <span className="text-green-800">Email:</span>
-                  <span className="text-green-900">{sinergiaUser.email || 'N/A'}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <User className="w-4 h-4 text-green-600" />
-                  <span className="text-green-800">Name:</span>
-                  <span className="text-green-900">
-                    {sinergiaUser.deS_NOME && sinergiaUser.deS_COGNOME 
-                      ? `${sinergiaUser.deS_NOME} ${sinergiaUser.deS_COGNOME}`
-                      : 'N/A'
-                    }
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Phone className="w-4 h-4 text-green-600" />
-                  <span className="text-green-800">Phone:</span>
-                  <span className="text-green-900">{sinergiaUser.telefono || 'N/A'}</span>
-                </div>
-              </div>
-            ) : (
-              <div className="text-sm text-green-700">
-                {loading ? 'Loading...' : error ? 'Data unavailable' : 'No data loaded'}
-              </div>
-            )}
+          <div className="flex items-center space-x-2">
+            <User className="w-4 h-4 text-gray-600" />
+            <span className="text-gray-800 font-medium">Name:</span>
+            <span className="text-gray-900">{(sinergiaUser.deS_NOME && sinergiaUser.deS_COGNOME) ? `${sinergiaUser.deS_NOME} ${sinergiaUser.deS_COGNOME}` : cognitoUser.name || 'N/A'}</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Mail className="w-4 h-4 text-gray-600" />
+            <span className="text-gray-800 font-medium">Email:</span>
+            <span className="text-gray-900">{sinergiaUser.email || cognitoUser.email || 'N/A'}</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Phone className="w-4 h-4 text-gray-600" />
+            <span className="text-gray-800 font-medium">Phone:</span>
+            <span className="text-gray-900">{sinergiaUser.telefono || 'N/A'}</span>
           </div>
         </div>
 
-        {/* Additional Information (if available) */}
-        {isLoaded && sinergiaUser && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h4 className="font-medium text-gray-900 mb-3">Additional Information</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              {sinergiaUser.deS_MODELLO_CORRENTE && (
-                <div>
-                  <span className="text-gray-600">Current Model:</span>
-                  <p className="text-gray-900 font-medium">{sinergiaUser.deS_MODELLO_CORRENTE}</p>
-                </div>
-              )}
-              {sinergiaUser.deS_APP_CORRENTE && (
-                <div>
-                  <span className="text-gray-600">Current App:</span>
-                  <p className="text-gray-900 font-medium">{sinergiaUser.deS_APP_CORRENTE}</p>
-                </div>
-              )}
-              {sinergiaUser.nuM_LICENZE_UTENTE && (
-                <div>
-                  <span className="text-gray-600">User Licenses:</span>
-                  <p className="text-gray-900 font-medium">{sinergiaUser.nuM_LICENZE_UTENTE}</p>
-                </div>
-              )}
-              <div>
-                <span className="text-gray-600">Administrator:</span>
-                <p className="text-gray-900 font-medium">
-                  {sinergiaUser.flG_AMMINISTRATORE ? 'Yes' : 'No'}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Action Buttons */}
+        {/* 
+        
         <div className="flex justify-between items-center pt-4 border-t border-gray-200">
-          <Button
+            
+             <Button
             variant="outline"
             onClick={handleRefresh}
             disabled={loading}
@@ -194,13 +108,15 @@ const UserInfoModal = ({ isOpen, onClose }) => {
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             <span>Refresh Data</span>
           </Button>
+           
+         
           
           <div className="flex space-x-3">
             <Button variant="outline" onClick={onClose}>
               Close
             </Button>
           </div>
-        </div>
+        </div> */}
       </div>
     </Modal>
   );
