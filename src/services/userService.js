@@ -24,7 +24,7 @@ class UserService {
       localStorage.setItem(this.cacheKeys.userId, userId.toString());
       localStorage.setItem(this.cacheKeys.userData, JSON.stringify(userData));
       localStorage.setItem(this.cacheKeys.timestamp, timestamp.toString());
-      console.log('User data cached successfully:', { userId, timestamp });
+    
     } catch (error) {
       console.warn('Failed to cache user data:', error);
     }
@@ -44,12 +44,12 @@ class UserService {
       const maxAge = this.cacheExpiryHours * 60 * 60 * 1000; // Convert hours to milliseconds
 
       if (cacheAge > maxAge) {
-        console.log('Cache expired, clearing old data');
+      
         this.clearCache();
         return null;
       }
 
-      console.log('Using cached user ID:', userId);
+    
       return userId;
     } catch (error) {
       console.warn('Failed to get cached user ID:', error);
@@ -87,7 +87,7 @@ class UserService {
       localStorage.removeItem(this.cacheKeys.userId);
       localStorage.removeItem(this.cacheKeys.userData);
       localStorage.removeItem(this.cacheKeys.timestamp);
-      console.log('User cache cleared');
+     
     } catch (error) {
       console.warn('Failed to clear user cache:', error);
     }
@@ -151,7 +151,7 @@ class UserService {
       ...options,
     };
 
-    console.log('Making User API request:', { url, method: config.method });
+   
 
     try {
       const response = await fetch(url, config);
@@ -161,7 +161,7 @@ class UserService {
       }
 
       const data = await response.json();
-      console.log('User API response received:', { status: response.status, dataType: typeof data });
+     
       
       return data;
     } catch (error) {
@@ -178,20 +178,13 @@ class UserService {
       // Get access token if not provided
       const token = accessToken || await this.getAccessToken();
       
-      console.log('Fetching user by Cognito ID:', {
-        cognitoId,
-        hasToken: !!token
-      });
+    
 
       // Make API call to get user by Cognito ID
       const endpoint = `/users/cognito/${cognitoId}`;
       const response = await this.makeAuthenticatedRequest(endpoint, token);
 
-      console.log('Raw User API response received:', {
-        cognitoId,
-        responseType: typeof response,
-        hasData: !!response
-      });
+    
 
       // Cache the user data if successful
       if (response && response.data && response.data.id) {
@@ -239,7 +232,7 @@ class UserService {
       }
 
       // If not in cache, fetch from API
-      console.log('User ID not in cache, fetching from API...');
+    
       const result = await this.getUserByCognitoId(cognitoId, accessToken);
 
       if (result.success && result.data?.data?.id) {
@@ -275,10 +268,6 @@ class UserService {
       const cognitoId = cognitoUser.profile.sub;
       const accessToken = cognitoUser.access_token;
 
-      console.log('Getting current user:', {
-        cognitoId,
-        hasAccessToken: !!accessToken
-      });
 
       return await this.getUserByCognitoId(cognitoId, accessToken);
 
@@ -302,12 +291,7 @@ class UserService {
     try {
       // Get access token if not provided
       const token = accessToken || await this.getAccessToken();
-      
-      console.log('Updating user:', {
-        cognitoId,
-        userData: Object.keys(userData),
-        hasToken: !!token
-      });
+  
 
       // Make API call to update user
       const endpoint = `/users/cognito/${cognitoId}`;
@@ -347,10 +331,7 @@ class UserService {
       // Get access token if not provided
       const token = accessToken || await this.getAccessToken();
       
-      console.log('Creating user:', {
-        userData: Object.keys(userData),
-        hasToken: !!token
-      });
+ 
 
       // Make API call to create user
       const endpoint = `/users`;

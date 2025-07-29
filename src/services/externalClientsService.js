@@ -47,7 +47,7 @@ class ExternalClientsService {
       ...options
     };
 
-    console.log('Making API request:', { url, method: config.method });
+   
 
     try {
       const response = await fetch(url, config);
@@ -57,7 +57,7 @@ class ExternalClientsService {
       }
 
       const data = await response.json();
-      console.log('API response received:', { status: response.status, dataType: typeof data });
+    
       
       return data;
     } catch (error) {
@@ -79,21 +79,13 @@ class ExternalClientsService {
         throw new Error(`Invalid organization code: ${organizationCode}`);
       }
 
-      console.log('Fetching clients for organization:', {
-        organizationCode,
-        organizationName: organization.name
-      });
+  
 
       // Make API call to external service
       const endpoint = `/clientifornitori/getallclienti/${organizationCode}/cli/0`;
       const response = await this.makeAuthenticatedRequest(endpoint, accessToken);
 
-      console.log('Raw API response received:', {
-        organizationCode,
-        responseType: typeof response,
-        hasData: !!response?.data,
-        isArray: Array.isArray(response?.data)
-      });
+ 
 
       // Handle the API response structure: { success: true, data: [...], message: "" }
       let clients = [];
@@ -133,15 +125,6 @@ class ExternalClientsService {
       const offset = (page - 1) * limit;
       const paginatedClients = filteredClients.slice(offset, offset + limit);
 
-      console.log('Successfully processed clients with pagination:', {
-        organizationCode,
-        totalClients: clients.length,
-        filteredCount: filteredClients.length,
-        page,
-        limit,
-        totalPages,
-        searchTerm: search
-      });
 
       return {
         success: true,

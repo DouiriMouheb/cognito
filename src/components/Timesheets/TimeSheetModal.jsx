@@ -82,19 +82,19 @@ export const TimeSheetModal = ({
     if (formData.organizationId && formData.organizationId !== "") {
       // Check cache first for customers
       if (customerCache[formData.organizationId]) {
-        console.log(`Loading customers from cache for org: ${formData.organizationId}`);
+       
         setCustomerOptions(customerCache[formData.organizationId]);
       } else {
-        console.log(`Loading customers from API for org: ${formData.organizationId}`);
+       
         loadCustomers(formData.organizationId);
       }
 
       // Check cache first for processes
       if (processCache[formData.organizationId]) {
-        console.log(`Loading processes from cache for org: ${formData.organizationId}`);
+        
         setProcessOptions(processCache[formData.organizationId]);
       } else {
-        console.log(`Loading processes from API for org: ${formData.organizationId}`);
+       
         loadProcesses(formData.organizationId);
       }
     } else {
@@ -214,6 +214,22 @@ export const TimeSheetModal = ({
     }
   };
 
+  // Helper to extract HH:mm from ISO or valid string
+  const toHHMM = (val) => {
+    if (!val) return "";
+    if (/^\d{2}:\d{2}$/.test(val)) return val;
+    // Try to parse ISO or other formats
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) {
+      return d.toISOString().substr(11, 5);
+    }
+    // fallback: try splitting
+    if (val.includes('T')) {
+      return val.split('T')[1]?.substr(0,5) || "";
+    }
+    return "";
+  };
+
   const initializeFormData = () => {
     if (timeEntry) {
       setFormData({
@@ -223,8 +239,8 @@ export const TimeSheetModal = ({
         processId: timeEntry.processId || "",
         activityId: timeEntry.activityId || "",
         date: timeEntry.date || new Date().toISOString().split('T')[0],
-        startTime: timeEntry.startTime || "08:25",
-        endTime: timeEntry.endTime || "09:25",
+        startTime: toHHMM(timeEntry.startTime) || "08:25",
+        endTime: toHHMM(timeEntry.endTime) || "09:25",
         description: timeEntry.description || ""
       });
     } else {
@@ -278,6 +294,7 @@ export const TimeSheetModal = ({
 
   const validateForm = () => {
     const newErrors = {};
+    const today = new Date().toISOString().split('T')[0];
 
     if (!formData.organizationId) {
       newErrors.organizationId = "Organization is required";
@@ -297,6 +314,8 @@ export const TimeSheetModal = ({
 
     if (!formData.date) {
       newErrors.date = "Date is required";
+    } else if (formData.date > today) {
+      newErrors.date = "Date cannot be in the future";
     }
 
     if (!formData.startTime) {
@@ -445,12 +464,13 @@ export const TimeSheetModal = ({
           </label>
             <Input
               type="date"
-
               value={formData.date}
               onChange={(e) => handleInputChange("date", e.target.value)}
               disabled={isReadOnly}
               required
               error={errors.date}
+              max={new Date().toISOString().split('T')[0]}
+              className={errors.date ? 'border-red-500' : ''}
             />
           </div>
               <div>
@@ -539,7 +559,7 @@ export const TimeSheetModal = ({
           {!isReadOnly && (
             <Button
               onClick={handleSubmit}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !!errors.date}
               className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white"
             >
               {isSubmitting ? (

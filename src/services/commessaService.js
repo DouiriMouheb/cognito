@@ -67,7 +67,7 @@ class CommessaService {
       ...options
     };
 
-    console.log('Making Commessa API request:', { url, method: config.method });
+   
 
     try {
       const response = await fetch(url, config);
@@ -77,7 +77,7 @@ class CommessaService {
       }
 
       const data = await response.json();
-      console.log('Commessa API response received:', { status: response.status, dataType: typeof data });
+    
       
       return data;
     } catch (error) {
@@ -99,21 +99,13 @@ class CommessaService {
         throw new Error(`Invalid organization code: ${organizationCode}`);
       }
 
-      console.log('Fetching commesse for organization:', {
-        organizationCode,
-        organizationName: organization.name
-      });
+   
 
       // Make API call to external service
       const endpoint = `/commesse/getallcommesse/${organizationCode}/0`;
       const response = await this.makeAuthenticatedRequest(endpoint, accessToken);
 
-      console.log('Raw Commessa API response received:', {
-        organizationCode,
-        responseType: typeof response,
-        hasData: !!response?.data,
-        isArray: Array.isArray(response?.data)
-      });
+
 
       // Handle the API response structure: { success: true, data: [...], message: "" }
       let rawCommesse = [];
@@ -172,15 +164,6 @@ class CommessaService {
       const offset = (page - 1) * limit;
       const paginatedCommesse = filteredCommesse.slice(offset, offset + limit);
 
-      console.log('Successfully processed commesse with pagination:', {
-        organizationCode,
-        totalCommesse: commesse.length,
-        filteredCount: filteredCommesse.length,
-        page,
-        limit,
-        totalPages,
-        searchTerm: search
-      });
 
       return {
         success: true,
