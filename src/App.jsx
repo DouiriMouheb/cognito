@@ -59,14 +59,18 @@ function App() {
     return <ErrorScreen error={auth.error} />;
   }
 
+  // Prevent /login history loop: if already authenticated and on /login, hard replace to /
+  if (window.location.pathname === "/login" && auth.isAuthenticated) {
+    window.location.replace("/");
+    return null;
+  }
+
   return (
     <>
       <Router>
         <Routes>
           {/* Authenticated users: redirect /login to dashboard */}
-          <Route path="/login" element={
-            auth.isAuthenticated ? <Navigate to="/" replace /> : <LoginScreen />
-          } />
+          <Route path="/login" element={<LoginScreen />} />
           {/* Main dashboard for authenticated users */}
           <Route path="/*" element={
             auth.isAuthenticated ? <Dashboard /> : <Navigate to="/login" replace />
