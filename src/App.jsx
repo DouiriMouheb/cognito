@@ -56,8 +56,15 @@ function App() {
   }
 
 
+
   // Never show loading screen if authenticated
-  if (!auth.isAuthenticated) {
+  if (auth.isAuthenticated) {
+    // If on /login, redirect to /timesheets
+    if (window.location.pathname === '/login') {
+      window.location.replace('/timesheets');
+      return null;
+    }
+  } else {
     if ((auth.isLoading && !isLoggingOut) || isLoggingOut) {
       const message = isLoggingOut ? "Signing out..." : "Loading...";
       const subtitle = isLoggingOut ? "Please wait while we sign you out" : "Authenticating with AWS Cognito";
