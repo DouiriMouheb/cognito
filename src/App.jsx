@@ -84,7 +84,9 @@ function App() {
       <Router>
         <Routes>
           {/* Authenticated users: redirect /login to dashboard */}
-          <Route path="/login" element={<LoginScreen />} />
+          <Route path="/login" element={
+            auth.isAuthenticated ? <Navigate to="/" replace /> : <LoginScreen />
+          } />
           {/* Main dashboard for authenticated users */}
           <Route path="/*" element={
             auth.isAuthenticated ? <Dashboard /> : <Navigate to="/login" replace />
