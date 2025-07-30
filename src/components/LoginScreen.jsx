@@ -1,13 +1,17 @@
 import { useAuth } from "react-oidc-context";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
+
 
 const LoginScreen = () => {
   const auth = useAuth();
+  const navigate = useNavigate();
 
-  // If already authenticated, redirect to dashboard
-  if (auth.isAuthenticated) {
-    return <Navigate to="/" replace />;
-  }
+  // If already authenticated, replace /login in history and go to dashboard
+  useEffect(() => {
+    if (auth.isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [auth.isAuthenticated, navigate]);
 
   const handleSignIn = async () => {
     try {
