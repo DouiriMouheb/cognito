@@ -1,4 +1,5 @@
-﻿import { useAuth } from "react-oidc-context";
+﻿
+import { useAuth } from "react-oidc-context";
 import { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from 'react-hot-toast';
@@ -12,6 +13,13 @@ import { SecurityValidator } from "./utils/security";
 function App() {
   const auth = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // Debug logging for authentication state
+  console.log("[DEBUG] location:", window.location.pathname);
+  console.log("[DEBUG] auth.isLoading:", auth.isLoading);
+  console.log("[DEBUG] auth.isAuthenticated:", auth.isAuthenticated);
+  console.log("[DEBUG] auth.error:", auth.error);
+  console.log("[DEBUG] isLoggingOut:", isLoggingOut);
 
   // Silent security initialization
   useEffect(() => {
@@ -28,6 +36,12 @@ function App() {
     const isLogoutInProgress = localStorage.getItem('logout_in_progress');
     if (isLogoutInProgress) {
       setIsLoggingOut(true);
+    }
+
+    // If user is authenticated, always reset isLoggingOut and clear flag
+    if (!auth.isLoading && auth.isAuthenticated && isLoggingOut) {
+      localStorage.removeItem('logout_in_progress');
+      setIsLoggingOut(false);
     }
 
     // Listen for authentication state changes
@@ -48,11 +62,13 @@ function App() {
   }
 
 
-  // Show loading screen only if loading, not authenticated, and not logging out
-  if ((auth.isLoading && !auth.isAuthenticated && !isLoggingOut) || isLoggingOut) {
-    const message = isLoggingOut ? "Signing out..." : "Loading...";
-    const subtitle = isLoggingOut ? "Please wait while we sign you out" : "Authenticating with AWS Cognito";
-    return <LoadingScreen message={message} subtitle={subtitle} />;
+  // Never show loading screen if authenticated
+  if (!auth.isAuthenticated) {
+    if ((auth.isLoading && !isLoggingOut) || isLoggingOut) {
+      const message = isLoggingOut ? "Signing out..." : "Loading...";
+      const subtitle = isLoggingOut ? "Please wait while we sign you out" : "Authenticating with AWS Cognito";
+      return <LoadingScreen message={message} subtitle={subtitle} />;
+    }
   }
 
   if (auth.error) {
@@ -64,6 +80,7 @@ function App() {
 
   return (
     <>
+      <pre style={{background:'#eee',padding:'8px',fontSize:'12px',maxWidth:'600px',overflow:'auto'}}>{JSON.stringify(auth, null, 2)}</pre>
       <Router>
         <Routes>
           {/* Authenticated users: redirect /login to dashboard */}
