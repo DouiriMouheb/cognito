@@ -14,12 +14,6 @@ function App() {
   const auth = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // Debug logging for authentication state
-  console.log("[DEBUG] location:", window.location.pathname);
-  console.log("[DEBUG] auth.isLoading:", auth.isLoading);
-  console.log("[DEBUG] auth.isAuthenticated:", auth.isAuthenticated);
-  console.log("[DEBUG] auth.error:", auth.error);
-  console.log("[DEBUG] isLoggingOut:", isLoggingOut);
 
   // Silent security initialization
   useEffect(() => {
@@ -80,7 +74,6 @@ function App() {
 
   return (
     <>
-      <pre style={{background:'#eee',padding:'8px',fontSize:'12px',maxWidth:'600px',overflow:'auto'}}>{JSON.stringify(auth, null, 2)}</pre>
       <Router>
         <Routes>
           {/* Authenticated users: redirect /login to dashboard */}

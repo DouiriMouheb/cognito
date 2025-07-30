@@ -7,10 +7,10 @@ const LoginScreen = () => {
   const auth = useAuth();
   const navigate = useNavigate();
 
-  // If already authenticated, replace /login in history and go to dashboard
+  // If already authenticated, replace /login in history and go to /timesheets
   useEffect(() => {
     if (auth.isAuthenticated) {
-      navigate('/', { replace: true });
+      navigate('/timesheets', { replace: true });
     }
   }, [auth.isAuthenticated, navigate]);
 
