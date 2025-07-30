@@ -47,8 +47,9 @@ function App() {
     return <LogoutSuccess />;
   }
 
-  // Authentication state handling
-  if (auth.isLoading || isLoggingOut) {
+
+  // Show loading screen only if loading, not authenticated, and not logging out
+  if ((auth.isLoading && !auth.isAuthenticated && !isLoggingOut) || isLoggingOut) {
     const message = isLoggingOut ? "Signing out..." : "Loading...";
     const subtitle = isLoggingOut ? "Please wait while we sign you out" : "Authenticating with AWS Cognito";
     return <LoadingScreen message={message} subtitle={subtitle} />;
@@ -59,11 +60,7 @@ function App() {
     return <ErrorScreen error={auth.error} />;
   }
 
-  // Prevent /login history loop: if already authenticated and on /login, hard replace to /
-  if (window.location.pathname === "/login" && auth.isAuthenticated) {
-    window.location.replace("/");
-    return null;
-  }
+
 
   return (
     <>
