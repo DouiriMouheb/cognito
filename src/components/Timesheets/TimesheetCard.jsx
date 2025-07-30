@@ -6,7 +6,7 @@ const TimesheetCard = ({
   onEdit,
   canEdit,
   getCustomerName,
-  getOrganizationName,
+  
   getActivityName,
   formatTime,
   style, // For positioning on timeline

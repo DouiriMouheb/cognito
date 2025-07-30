@@ -1,5 +1,3 @@
-import React from "react";
-import { Modal } from "./Modal";
 import { Button } from "./Button";
 import { AlertTriangle, Trash2, AlertCircle, Info } from "lucide-react";
 

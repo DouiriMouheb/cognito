@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ChevronDown, Check, Search, X } from "lucide-react";
 
 export const CustomSelect = ({
@@ -13,7 +13,6 @@ export const CustomSelect = ({
   loading = false,
   icon: Icon = null,
   className = "",
-  maxHeight = "200px",
   emptyMessage = "No options available",
 }) => {
   const [isOpen, setIsOpen] = useState(false);

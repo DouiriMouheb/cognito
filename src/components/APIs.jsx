@@ -8,13 +8,11 @@ const APIs = () => {
 
   return (
     <div className="w-full">
-      {/* Header */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900">APIs</h2>
         <p className="text-gray-600 mt-2">Manage external data sources and integrations</p>
       </div>
 
-      {/* Tab Navigation */}
       <div className="mb-8">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
@@ -52,21 +50,9 @@ const APIs = () => {
         </div>
       </div>
 
-      {/* Tab Content */}
-      {/* External Clients Tab */}
-      {activeTab === 'clients' && (
-        <ExternalClients />
-      )}
-
-      {/* Commessa Tab */}
-      {activeTab === 'commessa' && (
-        <Commessa />
-      )}
-
-      {/* User API Tab */}
-      {activeTab === 'users' && (
-        <UserAPI />
-      )}
+      {activeTab === 'clients' && <ExternalClients />}
+      {activeTab === 'commessa' && <Commessa />}
+      {activeTab === 'users' && <UserAPI />}
     </div>
   );
 };

@@ -1,14 +1,8 @@
-import React from "react";
-import { X } from "lucide-react";
-
 export const Modal = ({
   isOpen,
   onClose,
-  title,
   children,
-  footer,
   size = "md",
-  showHeader = true,
 }) => {
   if (!isOpen) return null;
 

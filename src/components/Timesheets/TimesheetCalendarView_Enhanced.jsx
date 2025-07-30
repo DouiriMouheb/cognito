@@ -1,14 +1,11 @@
 // src/components/Timesheets/TimesheetCalendarView_Enhanced.jsx - Google Calendar-style timesheet view
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  Calendar as CalendarIcon,
   Calendar,
-  Plus,
-  Edit,
-  Trash2,
+
 } from "lucide-react";
 import { Button } from "../common/Button";
 import DatePicker from "react-datepicker";

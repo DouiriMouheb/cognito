@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Square, Clock, AlertCircle } from "lucide-react";
 import { Button } from "../common/Button";
 import { showToast } from "../../utils/toast";

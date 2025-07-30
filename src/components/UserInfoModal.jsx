@@ -1,37 +1,31 @@
-import React from 'react';
 import { useAuth } from 'react-oidc-context';
 import { useSinergiaUser } from '../hooks/useApi';
 import { Modal } from './common/Modal';
-import { Button } from './common/Button';
 import { 
   User, 
   Mail, 
   Phone, 
   Hash, 
-  RefreshCw, 
   AlertCircle, 
-  CheckCircle, 
   Loader,
-  X 
 } from 'lucide-react';
 
 const UserInfoModal = ({ isOpen, onClose }) => {
   const auth = useAuth();
-  const { userData, loading, error, getCurrentUser, cognitoId, isLoaded } = useSinergiaUser();
+  const { userData, loading, error, cognitoId, isLoaded } = useSinergiaUser();
 
-  // Handle refresh user data
-  const handleRefresh = async () => {
-    await getCurrentUser();
-  };
 
   // Extract user information from API response
   const sinergiaUser = userData?.data || {};
   const cognitoUser = auth.user?.profile || {};
 
+
   // Combine first and last name
   const fullName = sinergiaUser.deS_NOME && sinergiaUser.deS_COGNOME 
     ? `${sinergiaUser.deS_NOME} ${sinergiaUser.deS_COGNOME}`
     : cognitoUser.name || 'Unknown User';
+
+
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="User Profile">
@@ -94,30 +88,7 @@ const UserInfoModal = ({ isOpen, onClose }) => {
             <span className="text-gray-900">{sinergiaUser.telefono || 'N/A'}</span>
           </div>
         </div>
-
-        {/* 
-        
-        <div className="flex justify-between items-center pt-4 border-t border-gray-200">
-            
-             <Button
-            variant="outline"
-            onClick={handleRefresh}
-            disabled={loading}
-            className="flex items-center space-x-2"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            <span>Refresh Data</span>
-          </Button>
-           
-         
-          
-          <div className="flex space-x-3">
-            <Button variant="outline" onClick={onClose}>
-              Close
-            </Button>
-          </div>
-        </div> */}
-      </div>
+  </div>
     </Modal>
   );
 };
