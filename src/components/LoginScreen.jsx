@@ -1,10 +1,15 @@
 import { useAuth } from "react-oidc-context";
+import { Navigate } from "react-router-dom";
 
 const LoginScreen = () => {
   const auth = useAuth();
 
-  const handleSignIn = async () => {
+  // If already authenticated, redirect to dashboard
+  if (auth.isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
 
+  const handleSignIn = async () => {
     try {
       await auth.signinRedirect();
     } catch (error) {
@@ -24,7 +29,6 @@ const LoginScreen = () => {
               </svg>
             </div>
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Sinergia</h2>
-           
           </div>
 
           {/* Sign In Card */}
