@@ -1,11 +1,13 @@
-import { useAuth } from "react-oidc-context";
+// import { useAuth } from "react-oidc-context"; // COGNITO DISABLED
+import { useMockAuth } from "../hooks/useMockAuth"; // Mock auth when Cognito is disabled
 
 const ErrorScreen = ({ error }) => {
-  const auth = useAuth();
+  const auth = useMockAuth(); // Using mock auth
 
   const clearAuthState = () => {
-    // Clear all authentication state
-    auth.removeUser();
+    // Clear all authentication state (disabled for mock auth)
+    console.log('[Mock] clearAuthState called - Cognito is disabled');
+    // auth.removeUser();
     sessionStorage.clear();
     localStorage.clear();
     // Remove URL parameters and reload

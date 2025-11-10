@@ -1,10 +1,16 @@
-import { useAuth } from "react-oidc-context";
+// import { useAuth } from "react-oidc-context"; // COGNITO DISABLED
+import { useMockAuth } from "../hooks/useMockAuth"; // Mock auth when Cognito is disabled
 import { Navigate, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 
 
 const LoginScreen = () => {
-  const auth = useAuth();
+  // NO LOGIN SCREEN NEEDED - Cognito is disabled
+  // Always redirect to home/dashboard
+  return <Navigate to="/" replace />;
+  
+  /* COGNITO LOGIN CODE COMMENTED OUT
+  const auth = useMockAuth();
   const navigate = useNavigate();
 
   // If already authenticated, replace /login in history and go to /timesheets
@@ -26,7 +32,6 @@ const LoginScreen = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="flex items-center justify-center min-h-screen px-4">
         <div className="max-w-md w-full space-y-8">
-          {/* Logo and Header */}
           <div className="text-center">
             <div className="mx-auto h-20 w-20 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mb-6">
               <svg className="h-10 w-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -36,11 +41,8 @@ const LoginScreen = () => {
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Sinergia</h2>
           </div>
 
-          {/* Sign In Card */}
           <div className="bg-white rounded-2xl shadow-xl p-8">
             <div className="space-y-6">
-             
-
               <div className="space-y-4">
                 <button
                   onClick={handleSignIn}
@@ -63,7 +65,6 @@ const LoginScreen = () => {
             </div>
           </div>
 
-          {/* Features */}
           <div className="grid grid-cols-1 gap-4 mt-8">
             <div className="bg-white/50 backdrop-blur-sm rounded-lg p-4 text-center">
               <div className="inline-flex items-center justify-center w-8 h-8 bg-green-100 rounded-full mb-2">
@@ -79,6 +80,7 @@ const LoginScreen = () => {
       </div>
     </div>
   );
+  */
 };
 
 export default LoginScreen;

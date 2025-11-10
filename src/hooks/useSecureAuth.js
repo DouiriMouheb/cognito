@@ -1,6 +1,10 @@
-import { useAuth } from 'react-oidc-context';
+// import { useAuth } from 'react-oidc-context'; // COGNITO DISABLED
+import { useMockAuth } from './useMockAuth'; // Mock auth when Cognito is disabled
 import { useEffect, useState } from 'react';
 import { SecurityValidator, SecurityLogger } from '../utils/security';
+
+// Use mock auth instead of real Cognito auth
+const useAuth = useMockAuth;
 
 /**
  * Enhanced authentication hook with security validation

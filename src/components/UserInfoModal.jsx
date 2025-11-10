@@ -1,4 +1,5 @@
-import { useAuth } from 'react-oidc-context';
+// import { useAuth } from 'react-oidc-context'; // COGNITO DISABLED
+import { useMockAuth } from '../hooks/useMockAuth'; // Mock auth when Cognito is disabled
 import { useSinergiaUser } from '../hooks/useApi';
 import { Modal } from './common/Modal';
 import { 
@@ -11,7 +12,7 @@ import {
 } from 'lucide-react';
 
 const UserInfoModal = ({ isOpen, onClose }) => {
-  const auth = useAuth();
+  const auth = useMockAuth(); // Using mock auth
   const { userData, loading, error, cognitoId, isLoaded } = useSinergiaUser();
 
 

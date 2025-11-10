@@ -1,11 +1,14 @@
-import { useAuth } from "react-oidc-context";
+// import { useAuth } from "react-oidc-context"; // COGNITO DISABLED
+import { useMockAuth } from "../hooks/useMockAuth"; // Mock auth when Cognito is disabled
 import LoadingScreen from "./LoadingScreen";
 import LoginScreen from "./LoginScreen";
 import { SecurityValidator } from "../utils/security";
 
 const ProtectedRoute = ({ children, requiredScopes = [] }) => {
-  const auth = useAuth();
-
+  // NO AUTHENTICATION - Cognito is disabled, always allow access
+  // const auth = useMockAuth();
+  
+  /* COGNITO PROTECTION CODE COMMENTED OUT
   // Show loading while checking authentication
   if (auth.isLoading) {
     return <LoadingScreen message="Checking authentication..." subtitle="Please wait" />;
@@ -60,8 +63,9 @@ const ProtectedRoute = ({ children, requiredScopes = [] }) => {
       );
     }
   }
+  */
 
-  // User is authenticated and has required permissions
+  // User is always "authenticated" when Cognito is disabled - just render children
   return children;
 };
 

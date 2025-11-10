@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from 'react-oidc-context';
+// import { useAuth } from 'react-oidc-context'; // COGNITO DISABLED
+import { useMockAuth } from './useMockAuth'; // Mock auth when Cognito is disabled
 import { userService } from '../services/userService';
 import apiService from '../services/apiService';
+
+// Use mock auth instead of real Cognito auth
+const useAuth = useMockAuth;
 
 // Custom hook for making API calls with authentication
 export const useApi = (endpoint, options = {}) => {
@@ -107,6 +111,23 @@ export const useSinergiaUser = () => {
 
   // Get current user data
   const getCurrentUser = async () => {
+    // DISABLED: Don't make real API calls with mock auth
+    console.log('[Mock Auth] getCurrentUser called - returning mock data instead of API call');
+    return {
+      success: true,
+      data: {
+        data: {
+          id: 1,
+          cognitoId: 'mock-user-id',
+          email: 'demo@example.com',
+          deS_NOME: 'Demo',
+          deS_COGNOME: 'User',
+          telefono: '+1234567890'
+        }
+      }
+    };
+    
+    /* COGNITO API CALL DISABLED
     if (!auth.user) {
       setError('No authenticated user');
       return;
@@ -132,10 +153,28 @@ export const useSinergiaUser = () => {
     } finally {
       setLoading(false);
     }
+    */
   };
 
   // Get user by Cognito ID
   const getUserByCognitoId = async (cognitoId) => {
+    // DISABLED: Don't make real API calls with mock auth
+    console.log('[Mock Auth] getUserByCognitoId called - returning mock data instead of API call');
+    return {
+      success: true,
+      data: {
+        data: {
+          id: 1,
+          cognitoId: cognitoId || 'mock-user-id',
+          email: 'demo@example.com',
+          deS_NOME: 'Demo',
+          deS_COGNOME: 'User',
+          telefono: '+1234567890'
+        }
+      }
+    };
+    
+    /* COGNITO API CALL DISABLED
     setLoading(true);
     setError(null);
 
@@ -155,10 +194,23 @@ export const useSinergiaUser = () => {
     } finally {
       setLoading(false);
     }
+    */
   };
 
   // Update user data
   const updateUser = async (cognitoId, userData) => {
+    // DISABLED: Don't make real API calls with mock auth
+    console.log('[Mock Auth] updateUser called - returning mock data instead of API call');
+    return {
+      success: true,
+      data: {
+        id: 1,
+        cognitoId: cognitoId || 'mock-user-id',
+        ...userData
+      }
+    };
+    
+    /* COGNITO API CALL DISABLED
     setLoading(true);
     setError(null);
 
@@ -178,58 +230,42 @@ export const useSinergiaUser = () => {
     } finally {
       setLoading(false);
     }
+    */
   };
 
   // Get Sinergia user ID (with caching)
   const getSinergiaUserId = async () => {
-    try {
-      // Return cached ID if available
-      if (sinergiaUserId) {
-        return sinergiaUserId;
-      }
-
-      // Check service cache first
-      const cachedId = userService.getCachedUserId();
-      if (cachedId) {
-        setSinergiaUserId(cachedId);
-        return cachedId;
-      }
-
-      // If no cache and no current user context, return null
-      if (!auth.user?.profile?.sub) {
-        console.warn('No authenticated user available for ID lookup');
-        return null;
-      }
-
-      // Fetch from API
-      const result = await userService.getSinergiaUserId(
-        auth.user.profile.sub,
-        auth.user.access_token
-      );
-
-      if (result.success) {
-        setSinergiaUserId(result.userId);
-        return result.userId;
-      } else {
-        console.error('Failed to get Sinergia user ID:', result.error);
-        return null;
-      }
-    } catch (error) {
-      console.error('Error in getSinergiaUserId:', error);
-      return null;
-    }
+    // DISABLED: Don't make real API calls with mock auth
+    console.log('[Mock Auth] getSinergiaUserId called - returning mock ID');
+    return '1'; // Mock user ID
   };
 
   // Clear cache on logout
   const clearUserCache = () => {
-    userService.clearCache();
-    setSinergiaUserId(null);
-    setUserData(null);
-    setError(null);
+    // DISABLED: No cache to clear with mock auth
+    console.log('[Mock Auth] clearUserCache called - no action needed');
   };
 
   // Auto-load current user when auth changes
   useEffect(() => {
+    // DISABLED: Don't make API calls with mock auth
+    console.log('[Mock Auth] Skipping Sinergia user API call - using mock data');
+    
+    // Set mock user data to prevent errors
+    setUserData({
+      data: {
+        id: 1,
+        cognitoId: 'mock-user-id',
+        email: 'demo@example.com',
+        deS_NOME: 'Demo',
+        deS_COGNOME: 'User',
+        telefono: '+1234567890'
+      }
+    });
+    setSinergiaUserId('1');
+    setLoading(false);
+    
+    /* COGNITO USER API CALL DISABLED
     if (auth.isAuthenticated && auth.user) {
       getCurrentUser();
       // Also try to load cached user ID
@@ -241,7 +277,8 @@ export const useSinergiaUser = () => {
       // Clear cache when user logs out
       clearUserCache();
     }
-  }, [auth.isAuthenticated, auth.user]);
+    */
+  }, []); // Empty dependency array - only run once on mount
 
   return {
     userData,

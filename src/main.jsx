@@ -1,9 +1,11 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
-import { AuthProvider } from "react-oidc-context";
+// import { AuthProvider } from "react-oidc-context";
 import "./index.css";
 
+// COGNITO AUTHENTICATION DISABLED - Commented out for development without login
+/*
 const cognitoAuthConfig = {
   authority: import.meta.env.VITE_COGNITO_AUTHORITY || "https://cognito-idp.eu-south-1.amazonaws.com/eu-south-1_gKX37NHrI",
   client_id: import.meta.env.VITE_COGNITO_CLIENT_ID,
@@ -21,15 +23,16 @@ const cognitoAuthConfig = {
   response_mode: "query",
   revokeTokensOnSignout: true, // Ensures tokens are revoked on signout
 };
+*/
 
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
-// Wrap the application with AuthProvider
+// Render app without AuthProvider (NO LOGIN REQUIRED)
 root.render(
   <React.StrictMode>
-    <AuthProvider {...cognitoAuthConfig}>
+    {/* <AuthProvider {...cognitoAuthConfig}> */}
       <App />
-    </AuthProvider>
+    {/* </AuthProvider> */}
   </React.StrictMode>
 );

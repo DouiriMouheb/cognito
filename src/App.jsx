@@ -1,5 +1,5 @@
 ﻿
-import { useAuth } from "react-oidc-context";
+// import { useAuth } from "react-oidc-context"; // COGNITO DISABLED
 import { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from 'react-hot-toast';
@@ -11,9 +11,18 @@ import LogoutSuccess from "./components/LogoutSuccess";
 import { SecurityValidator } from "./utils/security";
 
 function App() {
-  const auth = useAuth();
+  // COGNITO AUTHENTICATION DISABLED - Mock auth for development
+  const auth = {
+    isLoading: false,
+    isAuthenticated: true, // Always authenticated when Cognito is disabled
+    user: null,
+    error: null
+  };
+
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+  /* COGNITO CODE COMMENTED OUT
+  const auth = useAuth();
 
   // Silent security initialization
   useEffect(() => {
@@ -76,6 +85,7 @@ function App() {
     console.error("Authentication error:", auth.error);
     return <ErrorScreen error={auth.error} />;
   }
+  */
 
 
 
@@ -83,14 +93,9 @@ function App() {
     <>
       <Router>
         <Routes>
-          {/* Authenticated users: redirect /login to dashboard */}
-          <Route path="/login" element={
-            auth.isAuthenticated ? <Navigate to="/" replace /> : <LoginScreen />
-          } />
-          {/* Main dashboard for authenticated users */}
-          <Route path="/*" element={
-            auth.isAuthenticated ? <Dashboard /> : <Navigate to="/login" replace />
-          } />
+          {/* NO LOGIN REQUIRED - Direct access to dashboard */}
+          <Route path="/login" element={<Navigate to="/" replace />} />
+          <Route path="/*" element={<Dashboard />} />
         </Routes>
       </Router>
       <Toaster />

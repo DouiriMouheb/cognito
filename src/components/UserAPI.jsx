@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { useAuth } from 'react-oidc-context';
+// import { useAuth } from 'react-oidc-context'; // COGNITO DISABLED
+import { useMockAuth } from '../hooks/useMockAuth'; // Mock auth when Cognito is disabled
 import { useSinergiaUser } from '../hooks/useApi';
 import { showToast } from '../utils/toast';
 import { User, RefreshCw, Search, AlertCircle, CheckCircle, Loader } from 'lucide-react';
 
 const UserAPI = () => {
-  const auth = useAuth();
+  const auth = useMockAuth(); // Using mock auth
   const {
     userData,
     loading,

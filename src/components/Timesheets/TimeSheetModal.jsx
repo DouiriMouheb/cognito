@@ -4,7 +4,8 @@ import { Button } from "../common/Button";
 import { Input } from "../common/Input";
 import { CustomSelect } from "../common/CustomSelect";
 import { showToast } from "../../utils/toast";
-import { useAuth } from "react-oidc-context";
+// import { useAuth } from "react-oidc-context"; // COGNITO DISABLED
+import { useMockAuth } from "../../hooks/useMockAuth"; // Mock auth when Cognito is disabled
 import { externalClientsService } from "../../services/externalClientsService";
 import { organizationService } from "../../services/organizationService";
 import { commessaService } from "../../services/commessaService";
@@ -29,7 +30,7 @@ export const TimeSheetModal = ({
   projects = [],
   activities = [],
 }) => {
-  const auth = useAuth();
+  const auth = useMockAuth(); // Using mock auth
 
   const [formData, setFormData] = useState({
     organizationId: "",

@@ -13,7 +13,8 @@ import {
   CalendarDays,
   BarChart3,
 } from "lucide-react";
-import { useAuth } from "react-oidc-context";
+// import { useAuth } from "react-oidc-context"; // COGNITO DISABLED
+import { useMockAuth } from "../../hooks/useMockAuth"; // Mock auth when Cognito is disabled
 import { Button } from "../common/Button";
 import { ConfirmationModal } from "../common/ConfirmationModal";
 import { EnhancedTimeSheetTable } from "./EnhancedTimesheetTable";
@@ -62,27 +63,18 @@ export const TimeSheetList = () => {
     hasPrev: false,
   });
 
-  const { user, isLoading: authLoading } = useAuth();
+  const auth = useMockAuth(); // Using mock auth
+  const { user, isLoading: authLoading } = auth;
 
   useEffect(() => {
-    // Only load data if user is authenticated and auth is not loading
-    if (!authLoading && user) {
-      loadInitialData();
-    } else if (!authLoading && !user) {
-      // If auth is done loading but no user, stop loading
-      setLoading(false);
-    }
-  }, [authLoading, user]);
+    // Load data immediately since mock auth is always ready
+    loadInitialData();
+  }, []); // Empty dependency array - load once on mount
 
   useEffect(() => {
-    // Only load time entries if user is authenticated
-    if (!authLoading && user) {
-      loadTimeEntries();
-    } else if (!authLoading && !user) {
-      // If auth is done loading but no user, stop loading
-      setLoading(false);
-    }
-  }, [currentDate, viewMode, authLoading, user]);
+    // Load time entries immediately since mock auth is always ready
+    loadTimeEntries();
+  }, [currentDate, viewMode]); // Reload when date or view mode changes
 
   const loadInitialData = async () => {
     try {

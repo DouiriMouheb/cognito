@@ -1,56 +1,18 @@
 import { useState } from 'react';
-import { useAuth } from 'react-oidc-context';
+// import { useAuth } from 'react-oidc-context'; // COGNITO DISABLED
+import { useMockAuth } from '../hooks/useMockAuth'; // Mock auth when Cognito is disabled
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUserProfile } from '../hooks/useApi';
 import UserInfoModal from './UserInfoModal';
 
 const Sidebar = ({ isOpen, onToggle }) => {
-  const auth = useAuth();
+  const auth = useMockAuth(); // Using mock auth
   const navigate = useNavigate();
   const location = useLocation();
-  // const { profile } = useUserProfile();
-  // const [showUserModal, setShowUserModal] = useState(false);
 
   const handleSignOut = async () => {
-    try {
-      // Set logout flag to prevent UI flickering
-      localStorage.setItem('logout_in_progress', 'true');
-
-      // Clear local user data first
-      await auth.removeUser();
-
-      // Clear browser storage (but keep logout flag)
-      sessionStorage.clear();
-
-      // Clear auth-related cookies
-      document.cookie.split(";").forEach((c) => {
-        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-      });
-
-      // Clear other localStorage items but keep logout flag
-      const logoutFlag = localStorage.getItem('logout_in_progress');
-      localStorage.clear();
-      localStorage.setItem('logout_in_progress', logoutFlag);
-
-      // Redirect to Cognito logout with proper hosted UI domain
-      const clientId = import.meta.env.VITE_COGNITO_CLIENT_ID;
-      const logoutUri = import.meta.env.VITE_COGNITO_POST_LOGOUT_REDIRECT_URI;
-
-      // Use the hosted UI domain (not the OIDC issuer)
-      const hostedUIDomain = import.meta.env.VITE_COGNITO_HOSTED_UI_DOMAIN || "https://sinergiaiam.auth.eu-south-1.amazoncognito.com";
-      const logoutUrl = `${hostedUIDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
-
-      // Redirect to Cognito logout
-      window.location.href = logoutUrl;
-
-    } catch (error) {
-      console.error("Logout error:", error);
-      // Fallback to local logout if anything fails
-      localStorage.removeItem('logout_in_progress');
-      sessionStorage.clear();
-      localStorage.clear();
-      window.location.reload();
-    }
+    // NO LOGOUT FUNCTIONALITY - Cognito is disabled
+    console.log('[Mock] Logout disabled - Cognito authentication is not active');
   };
 
   return (

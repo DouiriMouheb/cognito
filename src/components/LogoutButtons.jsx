@@ -1,53 +1,20 @@
-import { useAuth } from "react-oidc-context";
+// import { useAuth } from "react-oidc-context"; // COGNITO DISABLED
+import { useMockAuth } from "../hooks/useMockAuth"; // Mock auth when Cognito is disabled
 import { useState } from "react";
 
 const LogoutButtons = () => {
-  const auth = useAuth();
+  const auth = useMockAuth(); // Using mock auth
   const [loading, setLoading] = useState(false);
 
   const handleSignOut = async () => {
-    setLoading(true);
-    try {
-      // Clear local user data first
-      await auth.removeUser();
-
-      // Clear browser storage
-      sessionStorage.clear();
-      localStorage.clear();
-
-      // Clear auth-related cookies
-      document.cookie.split(";").forEach((c) => {
-        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-      });
-
-      // Redirect to Cognito logout with proper hosted UI domain
-      const clientId = import.meta.env.VITE_COGNITO_CLIENT_ID;
-      const logoutUri = import.meta.env.VITE_COGNITO_POST_LOGOUT_REDIRECT_URI;
-      const hostedUIDomain = import.meta.env.VITE_COGNITO_HOSTED_UI_DOMAIN || "https://sinergiaiam.auth.eu-south-1.amazoncognito.com";
-      const logoutUrl = `${hostedUIDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
-
-      // Redirect to Cognito logout
-      window.location.href = logoutUrl;
-
-      // After redirect, Cognito should send user back to login screen (logoutUri)
-    } catch (error) {
-      console.error("Logout error:", error);
-      // Fallback to local logout if anything fails
-      handleLocalSignOut();
-    } finally {
-      setLoading(false);
-    }
+    // NO LOGOUT FUNCTIONALITY - Cognito is disabled
+    console.log('[Mock] Logout disabled - Cognito authentication is not active');
+    return;
   };
 
   const handleLocalSignOut = () => {
-    try {
-      sessionStorage.clear();
-      localStorage.clear();
-      window.location.reload();
-    } catch (error) {
-      console.error("Local logout error:", error);
-      window.location.reload();
-    }
+    // NO LOGOUT FUNCTIONALITY - Cognito is disabled
+    console.log('[Mock] Local logout disabled - Cognito authentication is not active');
   };
 
   return (
