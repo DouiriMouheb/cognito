@@ -1,41 +1,10 @@
-// Organization Service - wrapper around existing organization structure
+// Organization Service - Using mock data generator (Cognito disabled)
+import { generateMockOrganizations } from '../utils/mockData';
+
 class OrganizationService {
   constructor() {
-    // Mock organizations (same as existing structure)
-    this.organizations = [
-      { 
-        id: '41', 
-        code: '41', 
-        name: 'Sinergia Consulenze',
-        description: 'Main consulting division',
-        isActive: true,
-        createdAt: '2024-01-01T00:00:00Z'
-      },
-      { 
-        id: '410', 
-        code: '410', 
-        name: 'Sinergia EPC',
-        description: 'Engineering, Procurement and Construction',
-        isActive: true,
-        createdAt: '2024-01-01T00:00:00Z'
-      },
-      { 
-        id: '411', 
-        code: '411', 
-        name: 'Impronta',
-        description: 'Digital solutions and innovation',
-        isActive: true,
-        createdAt: '2024-01-01T00:00:00Z'
-      },
-      { 
-        id: '412', 
-        code: '412', 
-        name: 'Deep Reality',
-        description: 'Advanced technology and research',
-        isActive: true,
-        createdAt: '2024-01-01T00:00:00Z'
-      }
-    ];
+    // Use mock data generator
+    this.organizations = generateMockOrganizations();
   }
 
   // Get all organizations
@@ -51,19 +20,33 @@ class OrganizationService {
         if (filters.search) {
           const searchLower = filters.search.toLowerCase();
           filteredOrganizations = filteredOrganizations.filter(o => 
-            o.name.toLowerCase().includes(searchLower) ||
-            o.code.toLowerCase().includes(searchLower) ||
-            o.description.toLowerCase().includes(searchLower)
+            (o.deS_ORGANIZZAZIONE || '').toLowerCase().includes(searchLower) ||
+            (o.coD_ORGANIZZAZIONE || '').toLowerCase().includes(searchLower)
           );
         }
 
         // Sort by name
-        filteredOrganizations.sort((a, b) => a.name.localeCompare(b.name));
+        filteredOrganizations.sort((a, b) => 
+          (a.deS_ORGANIZZAZIONE || '').localeCompare(b.deS_ORGANIZZAZIONE || '')
+        );
+
+        // Map to expected format for UI components
+        const mappedOrganizations = filteredOrganizations.map(org => ({
+          id: org.idT_ORGANIZZAZIONE,
+          code: org.idT_ORGANIZZAZIONE.toString(),
+          name: org.deS_ORGANIZZAZIONE,
+          isActive: org.isActive !== undefined ? org.isActive : true,
+          // Keep original fields for backward compatibility
+          ...org
+        }));
+
+        console.log('[Mock] Returning', mappedOrganizations.length, 'organizations:', 
+          mappedOrganizations.map(o => `${o.code}: ${o.name}`).join(', '));
 
         resolve({
           success: true,
-          data: filteredOrganizations,
-          total: filteredOrganizations.length
+          data: mappedOrganizations,
+          total: mappedOrganizations.length
         });
       }, 200);
     });
@@ -113,13 +96,25 @@ class OrganizationService {
   async getActiveOrganizations() {
     return new Promise((resolve) => {
       setTimeout(() => {
-        const activeOrganizations = this.organizations.filter(o => o.isActive);
-        activeOrganizations.sort((a, b) => a.name.localeCompare(b.name));
+        const activeOrganizations = this.organizations.filter(o => o.isActive !== false);
+        activeOrganizations.sort((a, b) => 
+          (a.deS_ORGANIZZAZIONE || '').localeCompare(b.deS_ORGANIZZAZIONE || '')
+        );
+
+        // Map to expected format for UI components
+        const mappedOrganizations = activeOrganizations.map(org => ({
+          id: org.idT_ORGANIZZAZIONE,
+          code: org.idT_ORGANIZZAZIONE.toString(),
+          name: org.deS_ORGANIZZAZIONE,
+          isActive: true,
+          // Keep original fields
+          ...org
+        }));
 
         resolve({
           success: true,
-          data: activeOrganizations,
-          total: activeOrganizations.length
+          data: mappedOrganizations,
+          total: mappedOrganizations.length
         });
       }, 150);
     });

@@ -14,8 +14,7 @@ services:
   caddy:
     build: .
     ports:
-      - "80:80"
-      - "443:443"
+      - "2000:2000"
     restart: unless-stopped
     volumes:
       - caddy_data:/data

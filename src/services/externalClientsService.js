@@ -1,15 +1,11 @@
-// External Sinergia API Client Service
+// External Clients Service - Using mock data (Cognito disabled)
+import { generateMockCustomers, generateMockOrganizations, generateMockPagination } from '../utils/mockData';
+
 class ExternalClientsService {
   constructor() {
-    this.baseUrl = 'https://api.sinergia.cloud/api';
-    
-    // Predefined organizations
-    this.organizations = [
-      { code: '41', name: 'Sinergia Consulenze' },
-      { code: '410', name: 'Sinergia EPC' },
-      { code: '411', name: 'Impronta' },
-      { code: '412', name: 'Deep Reality' }
-    ];
+    // Use mock data
+    this.organizations = generateMockOrganizations();
+    this.clients = generateMockCustomers();
   }
 
   /**
@@ -19,7 +15,10 @@ class ExternalClientsService {
     return {
       success: true,
       data: {
-        organizations: this.organizations
+        organizations: this.organizations.map(org => ({
+          code: org.idT_ORGANIZZAZIONE.toString(),
+          name: org.deS_ORGANIZZAZIONE
+        }))
       }
     };
   }
@@ -28,226 +27,143 @@ class ExternalClientsService {
    * Get organization by code
    */
   getOrganizationByCode(code) {
-    return this.organizations.find(org => org.code === code);
-  }
-
-  /**
-   * Make authenticated request to Sinergia API
-   */
-  async makeAuthenticatedRequest(endpoint, accessToken, options = {}) {
-    const url = `${this.baseUrl}${endpoint}`;
-    
-    const config = {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-        ...options.headers
-      },
-      ...options
-    };
-
-   
-
-    try {
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-    
-      
-      return data;
-    } catch (error) {
-      console.error('API request failed:', error);
-      throw error;
+    const org = this.organizations.find(o => o.idT_ORGANIZZAZIONE.toString() === code);
+    if (org) {
+      return {
+        code: org.idT_ORGANIZZAZIONE.toString(),
+        name: org.deS_ORGANIZZAZIONE
+      };
     }
+    return null;
   }
 
   /**
-   * Get all clients for a specific organization with pagination
+   * Get all clients for a specific organization with pagination (MOCK)
    */
   async getClientsForOrganization(organizationCode, accessToken, options = {}) {
     const { page = 1, limit = 10, search = '' } = options;
     
-    try {
-      // Validate organization code
-      const organization = this.getOrganizationByCode(organizationCode);
-      if (!organization) {
-        throw new Error(`Invalid organization code: ${organizationCode}`);
-      }
-
-  
-
-      // Make API call to external service
-      const endpoint = `/clientifornitori/getallclienti/${organizationCode}/cli/0`;
-      const response = await this.makeAuthenticatedRequest(endpoint, accessToken);
-
- 
-
-      // Handle the API response structure: { success: true, data: [...], message: "" }
-      let clients = [];
-      if (response && response.success && Array.isArray(response.data)) {
-        clients = response.data;
-      } else if (Array.isArray(response)) {
-        // Fallback if response is directly an array
-        clients = response;
-      } else {
-        console.warn('Unexpected API response structure:', {
-          organizationCode,
-          responseStructure: {
-            success: response?.success,
-            dataType: typeof response?.data,
-            isValid: response?.isValid
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        try {
+          // Validate organization code
+          const organization = this.getOrganizationByCode(organizationCode);
+          if (!organization) {
+            resolve({
+              success: false,
+              error: `Invalid organization code: ${organizationCode}`
+            });
+            return;
           }
-        });
-        // Set empty array as fallback
-        clients = [];
-      }
 
-      // Apply search filter if provided
-      let filteredClients = clients;
-      if (search && search.trim()) {
-        const searchLower = search.toLowerCase();
-        filteredClients = clients.filter(client => {
-          return (
-            (client.ragsoc && client.ragsoc.toLowerCase().includes(searchLower)) ||
-            (client.id && client.id.toString().includes(search.trim()))
+          // Get clients for this organization
+          let clients = this.clients.filter(c => 
+            c.idT_ORGANIZZAZIONE.toString() === organizationCode
           );
-        });
-      }
 
-      // Apply pagination
-      const totalCount = filteredClients.length;
-      const totalPages = Math.ceil(totalCount / limit);
-      const offset = (page - 1) * limit;
-      const paginatedClients = filteredClients.slice(offset, offset + limit);
+          // Apply search filter
+          if (search) {
+            const searchLower = search.toLowerCase();
+            clients = clients.filter(c => 
+              (c.deS_CLIENTE || '').toLowerCase().includes(searchLower) ||
+              (c.coD_CLIENTE || '').toLowerCase().includes(searchLower) ||
+              (c.partitA_IVA || '').toLowerCase().includes(searchLower) ||
+              (c.email || '').toLowerCase().includes(searchLower)
+            );
+          }
 
+          // Sort by name
+          clients.sort((a, b) => 
+            (a.deS_CLIENTE || '').localeCompare(b.deS_CLIENTE || '')
+          );
 
-      return {
-        success: true,
-        data: {
-          organization: organization,
-          clients: paginatedClients,
-          pagination: {
-            currentPage: parseInt(page),
-            totalPages: totalPages,
-            totalItems: totalCount,
-            itemsPerPage: parseInt(limit),
-            hasNextPage: page < totalPages,
-            hasPreviousPage: page > 1
-          },
-          searchTerm: search || null
-        },
-        message: `Successfully loaded ${paginatedClients.length} clients`
-      };
+          // Apply pagination
+          const paginatedResult = generateMockPagination(clients, page, limit);
 
-    } catch (error) {
-      console.error('Failed to fetch clients for organization:', {
-        organizationCode,
-        error: error.message,
-        stack: error.stack
-      });
+          // Map to expected API format with ragsoc field
+          const mappedClients = paginatedResult.data.map(client => ({
+            id: client.idT_CLIENTE_ESTERNO || client.id,
+            ragsoc: client.deS_CLIENTE,
+            codice: client.coD_CLIENTE,
+            piva: client.partitA_IVA,
+            email: client.email,
+            tel: client.telefono,
+            indirizzo: client.indirizzo,
+            cap: client.cap,
+            citta: client.citta,
+            provincia: client.provincia,
+            nazione: client.nazione,
+            flG_CLIENTE: client.flG_CLIENTE,
+            flG_FORNITORE: client.flG_FORNITORE,
+            flG_PROSPECT: client.flG_PROSPECT,
+            // Keep all original fields
+            ...client
+          }));
 
-      return {
-        success: false,
-        error: {
-          code: 'EXTERNAL_API_ERROR',
-          message: `Failed to fetch clients: ${error.message}`,
-          organizationCode
+          console.log(`[Mock Clients] Org ${organizationCode}: Found ${mappedClients.length} clients -`,
+            mappedClients.map(c => c.ragsoc).slice(0, 3).join(', ') + (mappedClients.length > 3 ? '...' : ''));
+
+          resolve({
+            success: true,
+            data: {
+              clients: mappedClients,
+              pagination: paginatedResult.pagination,
+              stats: {
+                totalClients: clients.length,
+                filteredClients: paginatedResult.pagination.totalItems
+              }
+            }
+          });
+        } catch (error) {
+          console.error('Mock client fetch error:', error);
+          resolve({
+            success: false,
+            error: error.message
+          });
         }
-      };
-    }
+      }, 300); // Simulate network delay
+    });
   }
 
   /**
-   * Get client statistics for an organization
+   * Get client statistics (MOCK)
    */
   async getClientStats(organizationCode, accessToken) {
-    try {
-      const result = await this.getClientsForOrganization(organizationCode, accessToken, { limit: 1000 }); // Get all clients for stats
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const clients = this.clients.filter(c => 
+          c.idT_ORGANIZZAZIONE.toString() === organizationCode
+        );
 
-      if (!result.success) {
-        return result;
-      }
-
-      // Get all clients (not paginated) for accurate stats
-      const endpoint = `/clientifornitori/getallclienti/${organizationCode}/cli/0`;
-      const response = await this.makeAuthenticatedRequest(endpoint, accessToken);
-      
-      let allClients = [];
-      if (response && response.success && Array.isArray(response.data)) {
-        allClients = response.data;
-      } else if (Array.isArray(response)) {
-        allClients = response;
-      }
-
-      const stats = {
-        totalClients: allClients.length,
-        clientsWithPiva: allClients.filter(c => c.piva && c.piva.trim()).length,
-        clientsWithEmail: allClients.filter(c => c.emaiL_ISTITUZIONALE && c.emaiL_ISTITUZIONALE.trim()).length,
-        clientsWithPhone: allClients.filter(c => c.tel && c.tel.trim()).length,
-        clientsOnly: allClients.filter(c => c.flG_CLIENTE === true).length,
-        suppliersOnly: allClients.filter(c => c.flG_FORNITORE === true).length,
-        prospects: allClients.filter(c => c.flG_PROSPECT === true).length
-      };
-
-      return {
-        success: true,
-        data: {
-          organization: result.data.organization,
-          statistics: stats
-        }
-      };
-
-    } catch (error) {
-      console.error('Failed to get client statistics:', {
-        organizationCode,
-        error: error.message,
-        stack: error.stack
-      });
-
-      return {
-        success: false,
-        error: {
-          code: 'STATS_ERROR',
-          message: `Failed to get statistics: ${error.message}`,
-          organizationCode
-        }
-      };
-    }
+        resolve({
+          success: true,
+          data: {
+            totalClients: clients.length,
+            activeClients: clients.length,
+            recentClients: Math.min(5, clients.length)
+          }
+        });
+      }, 200);
+    });
   }
 
   /**
-   * Mock sync functionality (placeholder for future implementation)
+   * Sync organization data (MOCK - no-op)
    */
   async syncOrganization(organizationCode, accessToken) {
-    try {
-      // Simulate sync process
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const result = await this.getClientsForOrganization(organizationCode, accessToken, { limit: 1000 });
-      
-      if (result.success) {
-        return {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        console.log('[Mock] Sync organization called for:', organizationCode);
+        resolve({
           success: true,
-          message: `Successfully synced organization ${organizationCode}`,
+          message: `Mock sync completed for organization ${organizationCode}`,
           data: {
-            synced: result.data.clients.length,
-            updated: Math.floor(result.data.clients.length * 0.3) // Mock 30% updated
+            synced: true,
+            timestamp: new Date().toISOString()
           }
-        };
-      } else {
-        throw new Error('Failed to fetch clients for sync');
-      }
-    } catch (error) {
-      return {
-        success: false,
-        message: `Sync failed: ${error.message}`
-      };
-    }
+        });
+      }, 500);
+    });
   }
 }
 
