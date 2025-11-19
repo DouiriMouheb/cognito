@@ -2,6 +2,8 @@
 // Common utility functions used throughout the application
 
 export { SecurityValidator, SecurityLogger } from './security';
+export { default as logger } from './logger';
+export { default as EnvValidator } from './envValidator';
 
 /**
  * Format date to readable string

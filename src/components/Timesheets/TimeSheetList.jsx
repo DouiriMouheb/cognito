@@ -1,5 +1,5 @@
 // src/components/Timesheets/TimeSheetList.jsx - Main container with calendar views
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Plus,
   RefreshCw,
@@ -28,6 +28,7 @@ import { organizationService } from "../../services/organizationService";
 import { customerService } from "../../services/customerService";
 import { activityService } from "../../services/activityService";
 import { showToast } from "../../utils/toast";
+import logger from "../../utils/logger";
 
 export const TimeSheetList = () => {
   const [timeEntries, setTimeEntries] = useState([]);
@@ -267,7 +268,7 @@ export const TimeSheetList = () => {
     }
   };
 
-  const openTimeEntryModal = (mode, entry = null, dateInfo = null) => {
+  const openTimeEntryModal = useCallback((mode, entry = null, dateInfo = null) => {
     setModalMode(mode);
 
     let defaultEntry = {
@@ -292,11 +293,11 @@ export const TimeSheetList = () => {
 
     setSelectedTimeEntry(entry || defaultEntry);
     setShowTimeEntryModal(true);
-  };
+  }, []);
 
 
 
-  const handleTimeEntrySave = async (entryData) => {
+  const handleTimeEntrySave = useCallback(async (entryData) => {
     // Only update state, do not close modal or reload here. Modal handles API and close.
     if (modalMode === "create") {
       setTimeEntries((prev) => [entryData, ...prev]);
@@ -311,15 +312,15 @@ export const TimeSheetList = () => {
       );
       loadTimeEntries();
     }
-  };
+  }, [modalMode]);
 
-  const handleDeleteRequest = (entryId) => {
+  const handleDeleteRequest = useCallback((entryId) => {
     const entry = timeEntries.find((e) => (e.id || e._id) === entryId);
     if (entry) {
       setEntryToDelete(entry);
       setShowDeleteModal(true);
     }
-  };
+  }, [timeEntries]);
 
   const confirmDelete = async () => {
     if (!entryToDelete) return;

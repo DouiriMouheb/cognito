@@ -6,7 +6,9 @@ import { showToast } from "../../utils/toast";
 import { Check } from "lucide-react";
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL ;
+// Note: This component uses a separate Transportation Cost API endpoint
+// configured via VITE_TRANSPORTATION_COST_API environment variable
+const API_BASE_URL = import.meta.env.VITE_TRANSPORTATION_COST_API;
 
 // Vehicle class options
 const VEHICLE_CLASSES = [

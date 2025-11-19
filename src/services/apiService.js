@@ -1,5 +1,6 @@
 // API Service for making authenticated requests with Cognito tokens
 import { SecurityValidator, SecurityLogger } from '../utils/security';
+import logger from '../utils/logger';
 
 class ApiService {
   constructor(baseURL = import.meta.env.VITE_API_BASE_URL || 'https://api.example.com') {
@@ -125,7 +126,7 @@ class ApiService {
         error: error.message,
         stack: error.stack
       });
-      console.error('API request failed:', error);
+      logger.error('API request failed', { endpoint, error: error.message });
       throw error;
     }
   }

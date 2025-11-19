@@ -1,50 +1,20 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+
+
+import React, { useCallback, useState, useEffect, useMemo } from "react";
+import { TimeSheetSelectors } from "./TimeSheetSelectors";
 import { Modal } from "../common/Modal";
-import { Button } from "../common/Button";
-import { Input } from "../common/Input";
-import { CustomSelect } from "../common/CustomSelect";
+import { useMockAuth } from "../../hooks/useMockAuth";
+import { TimeSheetDetails } from "./TimeSheetDetails";
+import { MapPin } from "lucide-react";
+import { TimeSheetActions } from "./TimeSheetActions";
 import { TransportationCostModal } from "./TransportationCostModal";
-import { showToast } from "../../utils/toast";
 
-// API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL ;
-
-// Default form data
-const DEFAULT_FORM_DATA = {
-  organizationId: "",
-  customerId: "",
-  workLocation: "Organization Location",
-  processId: "",
-  activityId: "",
-  date: "",
-  startTime: "08:25",
-  endTime: "09:25",
-  description: ""
-};
-
-const DEFAULT_TRANSPORTATION_DATA = {
-  entryLocation: "",
-  entryLocationName: "",
-  exitLocation: "",
-  exitLocationName: "",
-  selectedClass: "",
-  cost: 0
-};
-// import { useAuth } from "react-oidc-context"; // COGNITO DISABLED
-import { useMockAuth } from "../../hooks/useMockAuth"; // Mock auth when Cognito is disabled
-import { externalClientsService } from "../../services/externalClientsService";
 import { organizationService } from "../../services/organizationService";
-import { commessaService } from "../../services/commessaService";
-import {
-  Building,
-  Users,
-  MapPin,
-  Settings,
-  Activity,
-  Calendar,
-  Clock,
-  X
-} from "lucide-react";
+import { showToast } from "../../utils/toast";
+import { commessaService } from "@/services/commessaService";
+import { externalClientsService } from "@/services/externalClientsService";
+
+// ...existing code...
 
 export const TimeSheetModal = ({
   isOpen,
@@ -56,22 +26,66 @@ export const TimeSheetModal = ({
   projects = [],
   activities = [],
 }) => {
-  const auth = useMockAuth(); // Using mock auth
-
+  // Load organizations for dropdown
+  const loadOrganizations = useCallback(async () => {
+    try {
+      setLoadingOrganizations(true);
+      // Replace with your actual service call
+      const response = await organizationService.getOrganizations();
+      if (response.success) {
+        setOrganizations(response.data.organizations || []);
+        setOrganizationsLoaded(true);
+      } else {
+        showToast.error(response.error?.message || "Failed to load organizations");
+        setOrganizations([]);
+      }
+    } catch (error) {
+      console.error("Error loading organizations:", error);
+      showToast.error("Failed to load organizations from API");
+      setOrganizations([]);
+    } finally {
+      setLoadingOrganizations(false);
+    }
+  }, []);
   // Memoize current date to avoid recalculation
   const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+
+  const auth = useMockAuth(); // Using mock auth
+
+  // API Configuration
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+  // Default form data
+  const DEFAULT_FORM_DATA = {
+    organizationId: "",
+    customerId: "",
+    workLocation: "Organization Location",
+    processId: "",
+    activityId: "",
+    date: "",
+    startTime: "08:25",
+    endTime: "09:25",
+    description: ""
+  };
+
+  const DEFAULT_TRANSPORTATION_DATA = {
+    entryLocation: "",
+    entryLocationName: "",
+    exitLocation: "",
+    exitLocationName: "",
+    selectedClass: "",
+    cost: 0
+  };
 
   const [formData, setFormData] = useState({
     ...DEFAULT_FORM_DATA,
     date: today
   });
-
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasTransportationCosts, setHasTransportationCosts] = useState(false);
   const [showTransportationModal, setShowTransportationModal] = useState(false);
   const [transportationData, setTransportationData] = useState(DEFAULT_TRANSPORTATION_DATA);
-
   // API data states
   const [organizations, setOrganizations] = useState([]);
   const [customerOptions, setCustomerOptions] = useState([]);
@@ -80,11 +94,9 @@ export const TimeSheetModal = ({
   const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [loadingProcesses, setLoadingProcesses] = useState(false);
   const [organizationsLoaded, setOrganizationsLoaded] = useState(false);
-
   // Cache for customers and processes by organization
   const [customerCache, setCustomerCache] = useState({});
   const [processCache, setProcessCache] = useState({});
-
   const processActivities = [
     { id: "", name: "Select a process first..." },
     { id: "1", name: "Frontend Development" },
@@ -92,101 +104,29 @@ export const TimeSheetModal = ({
     { id: "3", name: "Code Review" }
   ];
 
-  // Load organizations only once when modal opens for the first time
-  useEffect(() => {
-    if (isOpen && !organizationsLoaded) {
-      loadOrganizations();
-    }
-    if (isOpen) {
-      initializeFormData();
-      setErrors({});
-    }
-  }, [isOpen, timeEntry, organizationsLoaded]);
-
-  // Load customers and processes when organization changes (with caching)
-  useEffect(() => {
-    if (formData.organizationId && formData.organizationId !== "") {
-      // Check cache first for customers
-      if (customerCache[formData.organizationId]) {
-       
-        setCustomerOptions(customerCache[formData.organizationId]);
-      } else {
-       
-        loadCustomers(formData.organizationId);
-      }
-
-      // Check cache first for processes
-      if (processCache[formData.organizationId]) {
-        
-        setProcessOptions(processCache[formData.organizationId]);
-      } else {
-       
-        loadProcesses(formData.organizationId);
-      }
-    } else {
-      setCustomerOptions([]);
-      setProcessOptions([]);
-    }
-  }, [formData.organizationId, customerCache, processCache]);
-
-
-
-  const loadOrganizations = useCallback(async () => {
-    try {
-      setLoadingOrganizations(true);
-      const response = await organizationService.getOrganizations();
-      if (response.success) {
-        const orgsWithDefault = [
-          { id: "", code: "", name: "Select an organization..." },
-          ...response.data
-        ];
-        setOrganizations(orgsWithDefault);
-        setOrganizationsLoaded(true);
-
-        // Pre-select first organization if creating new entry and no organization is selected
-        if (!timeEntry && response.data.length > 0 && !formData.organizationId) {
-          const firstOrg = response.data[0];
-          setFormData(prev => ({
-            ...prev,
-            organizationId: firstOrg.code || firstOrg.id
-          }));
-        }
-      }
-    } catch (error) {
-      console.error("Error loading organizations:", error);
-      showToast.error("Failed to load organizations");
-    } finally {
-      setLoadingOrganizations(false);
-    }
-  }, [timeEntry, formData.organizationId]);
-
+  // Load customers for an organization
   const loadCustomers = useCallback(async (organizationCode) => {
     if (!auth.user?.access_token) {
       console.warn("No access token available for loading customers");
       return;
     }
-
     try {
       setLoadingCustomers(true);
       const response = await externalClientsService.getClientsForOrganization(
         organizationCode,
         auth.user.access_token,
-        { limit: 1000 } // Get all customers for dropdown
+        { limit: 1000 }
       );
-
       if (response.success) {
         const customerOptions = response.data.clients.map(client => ({
           value: client.id,
           label: client.ragsoc || 'Unknown Client',
           name: client.ragsoc || 'Unknown Client'
         }));
-
-        // Cache the results for this organization
         setCustomerCache(prev => ({
           ...prev,
           [organizationCode]: customerOptions
         }));
-
         setCustomerOptions(customerOptions);
       } else {
         showToast.error(response.error?.message || "Failed to load customers");
@@ -200,6 +140,18 @@ export const TimeSheetModal = ({
       setLoadingCustomers(false);
     }
   }, [auth.user?.access_token]);
+
+  // Load organizations only once when modal opens for the first time
+  useEffect(() => {
+    if (isOpen && !organizationsLoaded) {
+      loadOrganizations();
+    }
+    if (isOpen) {
+      initializeFormData();
+      setErrors({});
+    }
+  }, [isOpen, timeEntry, organizationsLoaded]);
+
 
   const loadProcesses = useCallback(async (organizationCode) => {
     if (!auth.user?.access_token) {
@@ -241,6 +193,27 @@ export const TimeSheetModal = ({
       setLoadingProcesses(false);
     }
   }, [auth.user?.access_token]);
+
+  // Load customers and processes when organization changes (with caching)
+  useEffect(() => {
+    if (formData.organizationId && formData.organizationId !== "") {
+      // Check cache first for customers
+      if (customerCache[formData.organizationId]) {
+        setCustomerOptions(customerCache[formData.organizationId]);
+      } else {
+        loadCustomers(formData.organizationId);
+      }
+      // Check cache first for processes
+      if (processCache[formData.organizationId]) {
+        setProcessOptions(processCache[formData.organizationId]);
+      } else {
+        loadProcesses(formData.organizationId);
+      }
+    } else {
+      setCustomerOptions([]);
+      setProcessOptions([]);
+    }
+  }, [formData.organizationId, customerCache, processCache, loadCustomers, loadProcesses]);
 
   // Helper to extract HH:mm from ISO or valid string
   const toHHMM = (val) => {
@@ -438,148 +411,27 @@ export const TimeSheetModal = ({
       className="max-w-2xl mx-4 sm:mx-auto w-full sm:max-w-2xl"
     >
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-        {/* Row 1: Organization, Customer, Work Location - Stack on mobile */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Row 1: Organization, Customer, Process Selectors */}
+        <TimeSheetSelectors
+          formData={formData}
+          errors={errors}
+          organizations={organizationOptions}
+          customerOptions={customerOptions}
+          processOptions={processOptions}
+          loadingOrganizations={loadingOrganizations}
+          loadingCustomers={loadingCustomers}
+          loadingProcesses={loadingProcesses}
+          onInputChange={handleInputChange}
+          isReadOnly={isReadOnly}
+        />
 
-          <div>
-            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-              <Building className="w-4 h-4 mr-1" />
-              Organization *
-            </label>
-            <CustomSelect
-              value={formData.organizationId}
-              onChange={(value) => handleInputChange("organizationId", value)}
-              options={organizationOptions}
-              placeholder={loadingOrganizations ? "Loading organizations..." : "Select an organization..."}
-              disabled={isReadOnly || loadingOrganizations}
-              loading={loadingOrganizations}
-              error={errors.organizationId}
-              icon={Building}
-              emptyMessage="No organizations available"
-            />
-          </div>
-
-          <div>
-            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-              <Users className="w-4 h-4 mr-1" />
-              Customer *
-            </label>
-            <CustomSelect
-              value={formData.customerId}
-              onChange={(value) => handleInputChange("customerId", value)}
-              options={customerOptions}
-              placeholder={
-                loadingCustomers ? "Loading customers..." :
-                  !formData.organizationId ? "Select an organization first..." :
-                    "Search customers..."
-              }
-              searchable={true}
-              clearable={true}
-              disabled={isReadOnly || loadingCustomers || !formData.organizationId}
-              loading={loadingCustomers}
-              error={errors.customerId}
-              icon={Users}
-              emptyMessage="No customers found"
-            />
-          </div>
-
-        <div>
-            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-              <Settings className="w-4 h-4 mr-1" />
-              Comessa *
-            </label>
-            <CustomSelect
-              value={formData.processId}
-              onChange={(value) => handleInputChange("processId", value)}
-              options={processOptions}
-              placeholder={
-                loadingProcesses ? "Loading Comessa..." :
-                  !formData.organizationId ? "Select an organization first..." :
-                    "Comessa"
-              }
-              searchable={true}
-              clearable={true}
-              disabled={isReadOnly || loadingProcesses || !formData.organizationId}
-              loading={loadingProcesses}
-              error={errors.processId}
-              icon={Settings}
-              emptyMessage="No processes found"
-            />
-          </div>
-        </div>
-
-        {/* Row 2: Process, Activity, Date - Stack on mobile */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        
-          <div>   <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-            <Calendar className="w-4 h-4 mr-1" />
-            Date *
-          </label>
-            <Input
-              type="date"
-              value={formData.date}
-              onChange={(e) => handleInputChange("date", e.target.value)}
-              disabled={isReadOnly}
-              required
-              error={errors.date}
-              max={new Date().toISOString().split('T')[0]}
-              className={errors.date ? 'border-red-500' : ''}
-            />
-          </div>
-              <div>
-            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-              <MapPin className="w-4 h-4 mr-1" />
-              Work Location *
-            </label>
-            <CustomSelect
-              value={formData.workLocation}
-              onChange={(value) => handleInputChange("workLocation", value)}
-              options={[
-                { value: "Organization Location", label: "Office", name: "Organization Location" },
-                { value: "Remote", label: "Remote", name: "Remote" },
-                { value: "Client Site", label: "Client Site", name: "Client Site" }
-              ]}
-              placeholder=" "
-              disabled={isReadOnly}
-              icon={MapPin}
-              emptyMessage="No work locations available"
-            />
-          </div>
-        {/* Time inputs - Stack on mobile */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-              <Clock className="w-4 h-4 mr-1" />
-              Start Time
-            </label>
-            <Input
-              type="time"
-
-              value={formData.startTime}
-              onChange={(e) => handleInputChange("startTime", e.target.value)}
-              disabled={isReadOnly}
-              required
-              error={errors.startTime}
-            />
-          </div>
-
-          <div>
-            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-              <Clock className="w-4 h-4 mr-1" />
-              End Time
-            </label>
-            <Input
-              type="time"
-
-              value={formData.endTime}
-              onChange={(e) => handleInputChange("endTime", e.target.value)}
-              disabled={isReadOnly}
-              required
-              error={errors.endTime}
-            />
-          </div>
-        </div>
-        </div>
+        {/* Row 2: Date, Work Location, Time Inputs */}
+        <TimeSheetDetails
+          formData={formData}
+          errors={errors}
+          onInputChange={handleInputChange}
+          isReadOnly={isReadOnly}
+        />
 
         {/* Row 3: Start Time, End Time */}
      
@@ -611,51 +463,16 @@ export const TimeSheetModal = ({
           </button>
         </div>
 
-        {/* Task Description */}
-        <div>
-          <Input
-            type="textarea"
-            label="Task Description"
-            value={formData.description}
-            onChange={(e) => handleInputChange("description", e.target.value)}
-            disabled={isReadOnly}
-            rows={4}
-            placeholder="Optional task description"
-          />
-        </div>
-
-        {/* Footer Buttons - Stack on mobile */}
-        <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-4 border-t border-gray-200">
-          <Button
-            variant="secondary"
-            onClick={handleCancel}
-            disabled={isSubmitting}
-            className="w-full sm:w-auto px-4 py-2"
-          >
-            <X className="w-4 h-4 mr-1" />
-            Cancel
-          </Button>
-
-          {!isReadOnly && (
-            <Button
-              onClick={handleSubmit}
-              disabled={isSubmitting || !!errors.date}
-              className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              {isSubmitting ? (
-                <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                  Creating...
-                </div>
-              ) : (
-                <>
-                  <Calendar className="w-4 h-4 mr-1" />
-                  Create
-                </>
-              )}
-            </Button>
-          )}
-        </div>
+        {/* Task Description and Footer Actions */}
+        <TimeSheetActions
+          formData={formData}
+          errors={errors}
+          isSubmitting={isSubmitting}
+          isReadOnly={isReadOnly}
+          onCancel={handleCancel}
+          onSubmit={handleSubmit}
+          handleInputChange={handleInputChange}
+        />
       </div>
     </Modal>
 

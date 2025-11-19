@@ -2,7 +2,10 @@
 
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: import.meta.env.VITE_API_BASE_URL || 'https://api.example.com',
+  // Main API endpoint for timesheets, users, organizations, etc.
+  BASE_URL: import.meta.env.VITE_API_BASE_URL || 'https://dcodelabs.studio/',
+  // Separate endpoint for transportation cost calculations
+  TRANSPORTATION_COST_URL: import.meta.env.VITE_TRANSPORTATION_COST_API || 'http://localhost:3000',
   TIMEOUT: 30000, // 30 seconds
   RETRY_ATTEMPTS: 3,
 };

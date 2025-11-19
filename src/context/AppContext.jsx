@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { STORAGE_KEYS, THEME_CONFIG } from '../constants';
+import logger from '../utils/logger';
 
 // Initial state
 const initialState = {
@@ -91,7 +92,7 @@ export const AppProvider = ({ children }) => {
         }
       }
     } catch (error) {
-      console.error('Failed to load user preferences:', error);
+      logger.error('Failed to load user preferences', { error: error.message });
     }
   }, []);
 
@@ -106,7 +107,7 @@ export const AppProvider = ({ children }) => {
       };
       localStorage.setItem(STORAGE_KEYS.USER_PREFERENCES, JSON.stringify(preferences));
     } catch (error) {
-      console.error('Failed to save user preferences:', error);
+      logger.error('Failed to save user preferences', { error: error.message });
     }
   }, [state.theme, state.language, state.notifications, state.userPreferences]);
 

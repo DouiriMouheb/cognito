@@ -1,4 +1,6 @@
 // User API Service for Sinergia Cloud
+import logger from '../utils/logger';
+
 class UserService {
   constructor() {
     this.baseUrl = 'https://api.sinergia.cloud/api';
@@ -26,7 +28,7 @@ class UserService {
       localStorage.setItem(this.cacheKeys.timestamp, timestamp.toString());
     
     } catch (error) {
-      console.warn('Failed to cache user data:', error);
+      logger.warn('Failed to cache user data', { error: error.message });
     }
   }
 
@@ -52,7 +54,7 @@ class UserService {
     
       return userId;
     } catch (error) {
-      console.warn('Failed to get cached user ID:', error);
+      logger.warn('Failed to get cached user ID', { error: error.message });
       return null;
     }
   }
@@ -77,7 +79,7 @@ class UserService {
 
       return JSON.parse(userData);
     } catch (error) {
-      console.warn('Failed to get cached user data:', error);
+      logger.warn('Failed to get cached user data', { error: error.message });
       return null;
     }
   }
@@ -89,7 +91,7 @@ class UserService {
       localStorage.removeItem(this.cacheKeys.timestamp);
      
     } catch (error) {
-      console.warn('Failed to clear user cache:', error);
+      logger.warn('Failed to clear user cache', { error: error.message });
     }
   }
 
@@ -131,7 +133,7 @@ class UserService {
       const data = await response.json();
       return data.access_token;
     } catch (error) {
-      console.error('Failed to get access token:', error);
+      logger.error('Failed to get access token', { error: error.message });
       throw error;
     }
   }
@@ -165,7 +167,7 @@ class UserService {
       
       return data;
     } catch (error) {
-      console.error('User API request failed:', error);
+      logger.error('User API request failed', { endpoint, error: error.message });
       throw error;
     }
   }
