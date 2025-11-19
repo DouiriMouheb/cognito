@@ -1,9 +1,35 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Modal } from "../common/Modal";
 import { Button } from "../common/Button";
 import { Input } from "../common/Input";
 import { CustomSelect } from "../common/CustomSelect";
+import { TransportationCostModal } from "./TransportationCostModal";
 import { showToast } from "../../utils/toast";
+
+// API Configuration
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+// Default form data
+const DEFAULT_FORM_DATA = {
+  organizationId: "",
+  customerId: "",
+  workLocation: "Organization Location",
+  processId: "",
+  activityId: "",
+  date: "",
+  startTime: "08:25",
+  endTime: "09:25",
+  description: ""
+};
+
+const DEFAULT_TRANSPORTATION_DATA = {
+  entryLocation: "",
+  entryLocationName: "",
+  exitLocation: "",
+  exitLocationName: "",
+  selectedClass: "",
+  cost: 0
+};
 // import { useAuth } from "react-oidc-context"; // COGNITO DISABLED
 import { useMockAuth } from "../../hooks/useMockAuth"; // Mock auth when Cognito is disabled
 import { externalClientsService } from "../../services/externalClientsService";
@@ -32,20 +58,19 @@ export const TimeSheetModal = ({
 }) => {
   const auth = useMockAuth(); // Using mock auth
 
+  // Memoize current date to avoid recalculation
+  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+
   const [formData, setFormData] = useState({
-    organizationId: "",
-    customerId: "",
-    workLocation: "Organization Location",
-    processId: "",
-    activityId: "",
-    date: new Date().toISOString().split('T')[0],
-    startTime: "08:25",
-    endTime: "09:25",
-    description: ""
+    ...DEFAULT_FORM_DATA,
+    date: today
   });
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasTransportationCosts, setHasTransportationCosts] = useState(false);
+  const [showTransportationModal, setShowTransportationModal] = useState(false);
+  const [transportationData, setTransportationData] = useState(DEFAULT_TRANSPORTATION_DATA);
 
   // API data states
   const [organizations, setOrganizations] = useState([]);
@@ -104,7 +129,9 @@ export const TimeSheetModal = ({
     }
   }, [formData.organizationId, customerCache, processCache]);
 
-  const loadOrganizations = async () => {
+
+
+  const loadOrganizations = useCallback(async () => {
     try {
       setLoadingOrganizations(true);
       const response = await organizationService.getOrganizations();
@@ -131,9 +158,9 @@ export const TimeSheetModal = ({
     } finally {
       setLoadingOrganizations(false);
     }
-  };
+  }, [timeEntry, formData.organizationId]);
 
-  const loadCustomers = async (organizationCode) => {
+  const loadCustomers = useCallback(async (organizationCode) => {
     if (!auth.user?.access_token) {
       console.warn("No access token available for loading customers");
       return;
@@ -168,13 +195,13 @@ export const TimeSheetModal = ({
     } catch (error) {
       console.error("Error loading customers:", error);
       showToast.error("Failed to load customers from API");
-      setCustomers([{ id: "", name: "Error loading customers" }]);
+      setCustomerOptions([]);
     } finally {
       setLoadingCustomers(false);
     }
-  };
+  }, [auth.user?.access_token]);
 
-  const loadProcesses = async (organizationCode) => {
+  const loadProcesses = useCallback(async (organizationCode) => {
     if (!auth.user?.access_token) {
       console.warn("No access token available for loading processes");
       return;
@@ -209,11 +236,11 @@ export const TimeSheetModal = ({
     } catch (error) {
       console.error("Error loading processes:", error);
       showToast.error("Failed to load processes from API");
-      setProcesses([{ id: "", name: "Error loading processes" }]);
+      setProcessOptions([]);
     } finally {
       setLoadingProcesses(false);
     }
-  };
+  }, [auth.user?.access_token]);
 
   // Helper to extract HH:mm from ISO or valid string
   const toHHMM = (val) => {
@@ -231,7 +258,7 @@ export const TimeSheetModal = ({
     return "";
   };
 
-  const initializeFormData = () => {
+  const initializeFormData = useCallback(() => {
     if (timeEntry) {
       setFormData({
         organizationId: timeEntry.organizationId || "",
@@ -239,7 +266,7 @@ export const TimeSheetModal = ({
         workLocation: timeEntry.workLocation || "Organization Location",
         processId: timeEntry.processId || "",
         activityId: timeEntry.activityId || "",
-        date: timeEntry.date || new Date().toISOString().split('T')[0],
+        date: timeEntry.date || today,
         startTime: toHHMM(timeEntry.startTime) || "08:25",
         endTime: toHHMM(timeEntry.endTime) || "09:25",
         description: timeEntry.description || ""
@@ -247,20 +274,13 @@ export const TimeSheetModal = ({
     } else {
       // Reset to defaults for new entry
       setFormData({
-        organizationId: "",
-        customerId: "",
-        workLocation: "Organization Location",
-        processId: "",
-        activityId: "",
-        date: new Date().toISOString().split('T')[0],
-        startTime: "08:25",
-        endTime: "09:25",
-        description: ""
+        ...DEFAULT_FORM_DATA,
+        date: today
       });
     }
-  };
+  }, [timeEntry, today]);
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = useCallback((field, value) => {
     setFormData(prev => {
       const newData = {
         ...prev,
@@ -280,22 +300,21 @@ export const TimeSheetModal = ({
     });
 
     // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ""
-      }));
-    }
+    setErrors(prev => {
+      if (prev[field]) {
+        return { ...prev, [field]: "" };
+      }
+      return prev;
+    });
 
     // Notify parent component
     if (onChange) {
       onChange(field, value);
     }
-  };
+  }, [onChange]);
 
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     const newErrors = {};
-    const today = new Date().toISOString().split('T')[0];
 
     if (!formData.organizationId) {
       newErrors.organizationId = "Organization is required";
@@ -333,9 +352,9 @@ export const TimeSheetModal = ({
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [formData, today]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!validateForm()) {
       return;
     }
@@ -352,28 +371,57 @@ export const TimeSheetModal = ({
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [validateForm, onSave, formData, onClose]);
 
-  const handleCancel = () => {
+  const handleTransportationToggle = useCallback(() => {
+    const newValue = !hasTransportationCosts;
+    setHasTransportationCosts(newValue);
+    if (newValue) {
+      setShowTransportationModal(true);
+    } else {
+      setTransportationData(DEFAULT_TRANSPORTATION_DATA);
+    }
+  }, [hasTransportationCosts]);
+
+  const handleTransportationSave = useCallback((data) => {
+    setTransportationData(data);
+    setShowTransportationModal(false);
+  }, []);
+
+  const handleTransportationCancel = useCallback(() => {
+    setShowTransportationModal(false);
+    // Reset if nothing was selected
+    if (!transportationData.selectedClass) {
+      setHasTransportationCosts(false);
+      setTransportationData(DEFAULT_TRANSPORTATION_DATA);
+    }
+  }, [transportationData.selectedClass]);
+
+
+  const handleCancel = useCallback(() => {
     setFormData({
-      organizationId: "",
-      customerId: "",
-      workLocation: "Organization Location",
-      processId: "",
-      activityId: "",
-      date: new Date().toISOString().split('T')[0],
-      startTime: "08:25",
-      endTime: "09:25",
-      description: ""
+      ...DEFAULT_FORM_DATA,
+      date: today
     });
     setErrors({});
+    setHasTransportationCosts(false);
+    setTransportationData(DEFAULT_TRANSPORTATION_DATA);
     onClose();
-  };
+  }, [onClose, today]);
 
   const isReadOnly = mode === "view";
-  const title = mode === "create" ? "Add Time Entry" : mode === "edit" ? "Edit Time Entry" : "View Time Entry";
+
+  // Memoize organization options
+  const organizationOptions = useMemo(() => 
+    organizations.map(org => ({
+      value: org.code || org.id,
+      label: org.name,
+      name: org.name
+    })), [organizations]
+  );
 
   return (
+    <>
     <Modal
       isOpen={isOpen}
       onClose={handleCancel}
@@ -393,11 +441,7 @@ export const TimeSheetModal = ({
             <CustomSelect
               value={formData.organizationId}
               onChange={(value) => handleInputChange("organizationId", value)}
-              options={organizations.map(org => ({
-                value: org.code || org.id,
-                label: org.name,
-                name: org.name
-              }))}
+              options={organizationOptions}
               placeholder={loadingOrganizations ? "Loading organizations..." : "Select an organization..."}
               disabled={isReadOnly || loadingOrganizations}
               loading={loadingOrganizations}
@@ -532,6 +576,33 @@ export const TimeSheetModal = ({
         {/* Row 3: Start Time, End Time */}
      
 
+        {/* Transportation Costs Toggle */}
+        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex items-center space-x-2">
+            <MapPin className="w-4 h-4 text-gray-600" />
+            <span className="text-sm font-medium text-gray-700">Transportation Costs</span>
+            {hasTransportationCosts && transportationData.cost > 0 && (
+              <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">
+                €{transportationData.cost.toFixed(2)} (Class {transportationData.selectedClass})
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleTransportationToggle}
+            disabled={isReadOnly}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+              hasTransportationCosts ? 'bg-blue-600' : 'bg-gray-300'
+            } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                hasTransportationCosts ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+
         {/* Task Description */}
         <div>
           <Input
@@ -579,5 +650,15 @@ export const TimeSheetModal = ({
         </div>
       </div>
     </Modal>
+
+    {/* Transportation Costs Modal */}
+    <TransportationCostModal
+      isOpen={showTransportationModal}
+      onClose={handleTransportationCancel}
+      onSave={handleTransportationSave}
+      onChange={setTransportationData}
+      initialData={transportationData}
+    />
+    </>
   );
 };

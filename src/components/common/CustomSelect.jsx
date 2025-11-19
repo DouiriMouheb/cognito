@@ -51,14 +51,14 @@ export const CustomSelect = ({
   }, [isOpen, searchable]);
 
   const handleSelect = (option) => {
-    onChange(option.value);
+    onChange(option.value, option);
     setIsOpen(false);
     setSearchTerm("");
   };
 
   const handleClear = (e) => {
     e.stopPropagation();
-    onChange("");
+    onChange("", null);
     setSearchTerm("");
   };
 
