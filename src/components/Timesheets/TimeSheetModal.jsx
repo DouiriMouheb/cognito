@@ -7,7 +7,7 @@ import { TransportationCostModal } from "./TransportationCostModal";
 import { showToast } from "../../utils/toast";
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_URL ;
 
 // Default form data
 const DEFAULT_FORM_DATA = {
@@ -355,6 +355,14 @@ export const TimeSheetModal = ({
   }, [formData, today]);
 
   const handleSubmit = useCallback(async () => {
+    // Compose the body to be sent
+    const body = {
+      ...formData,
+      transportation: hasTransportationCosts ? transportationData : undefined
+    };
+    // Log the body for debug
+    console.log("[TimeSheet Create] Body to send:", body);
+
     if (!validateForm()) {
       return;
     }
@@ -362,7 +370,7 @@ export const TimeSheetModal = ({
     setIsSubmitting(true);
 
     try {
-      await onSave(formData);
+      await onSave(formData); // keep original behavior
       onClose();
       showToast.success("Time entry saved successfully!");
     } catch (error) {
@@ -371,7 +379,7 @@ export const TimeSheetModal = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateForm, onSave, formData, onClose]);
+  }, [validateForm, onSave, formData, onClose, hasTransportationCosts, transportationData]);
 
   const handleTransportationToggle = useCallback(() => {
     const newValue = !hasTransportationCosts;

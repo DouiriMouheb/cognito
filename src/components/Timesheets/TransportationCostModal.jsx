@@ -6,7 +6,7 @@ import { showToast } from "../../utils/toast";
 import { Check } from "lucide-react";
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_URL ;
 
 // Vehicle class options
 const VEHICLE_CLASSES = [
