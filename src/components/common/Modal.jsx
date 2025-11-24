@@ -3,6 +3,7 @@ export const Modal = ({
   onClose,
   children,
   size = "md",
+  className = "",
 }) => {
   if (!isOpen) return null;
 
@@ -27,7 +28,7 @@ export const Modal = ({
       onClick={handleBackdropClick}
     >
       <div
-        className={`bg-white rounded-xl shadow-2xl border border-slate-200 w-full ${sizeClasses[size]} max-h-[90vh] overflow-hidden flex flex-col`}
+        className={`bg-white rounded-xl shadow-2xl border border-slate-200 w-full ${sizeClasses[size]} ${className} max-h-[90vh] overflow-hidden flex flex-col`}
         onClick={(e) => e.stopPropagation()}
       >
 

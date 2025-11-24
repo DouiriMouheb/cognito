@@ -45,6 +45,46 @@ export const generateMockOrganizations = () => {
       coD_ORGANIZZAZIONE: 'SIN-NA',
       created_at: '2024-05-20T10:00:00Z',
       updated_at: '2024-05-20T10:00:00Z'
+    },
+    {
+      id: 6,
+      idT_ORGANIZZAZIONE: 6,
+      deS_ORGANIZZAZIONE: 'Turin Tech Hub',
+      coD_ORGANIZZAZIONE: 'SIN-TO',
+      created_at: '2024-06-15T10:00:00Z',
+      updated_at: '2024-06-15T10:00:00Z'
+    },
+    {
+      id: 7,
+      idT_ORGANIZZAZIONE: 7,
+      deS_ORGANIZZAZIONE: 'Bologna Innovation Center',
+      coD_ORGANIZZAZIONE: 'SIN-BO',
+      created_at: '2024-07-22T10:00:00Z',
+      updated_at: '2024-07-22T10:00:00Z'
+    },
+    {
+      id: 8,
+      idT_ORGANIZZAZIONE: 8,
+      deS_ORGANIZZAZIONE: 'Genoa Maritime Division',
+      coD_ORGANIZZAZIONE: 'SIN-GE',
+      created_at: '2024-08-18T10:00:00Z',
+      updated_at: '2024-08-18T10:00:00Z'
+    },
+    {
+      id: 9,
+      idT_ORGANIZZAZIONE: 9,
+      deS_ORGANIZZAZIONE: 'Palermo Solutions',
+      coD_ORGANIZZAZIONE: 'SIN-PA',
+      created_at: '2024-09-10T10:00:00Z',
+      updated_at: '2024-09-10T10:00:00Z'
+    },
+    {
+      id: 10,
+      idT_ORGANIZZAZIONE: 10,
+      deS_ORGANIZZAZIONE: 'Venice Creative Labs',
+      coD_ORGANIZZAZIONE: 'SIN-VE',
+      created_at: '2024-10-01T10:00:00Z',
+      updated_at: '2024-10-01T10:00:00Z'
     }
   ];
 };

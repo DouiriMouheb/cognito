@@ -13,17 +13,12 @@ import {
   CalendarDays,
   BarChart3,
 } from "lucide-react";
-// import { useAuth } from "react-oidc-context"; // COGNITO DISABLED
 import { useMockAuth } from "../../hooks/useMockAuth"; // Mock auth when Cognito is disabled
 import { Button } from "../common/Button";
-import { timesheetService } from "../../services/timesheetService";
-import { processService } from "../../services/processService";
-import { organizationService } from "../../services/organizationService";
-import { customerService } from "../../services/customerService";
-import { activityService } from "../../services/activityService";
 import { showToast } from "../../utils/toast";
 import logger from "../../utils/logger";
 import LoadingScreen from "../LoadingScreen";
+import { useTimesheetStore } from "../../store/timesheetStore"; // Import the Zustand store
 
 const ConfirmationModal = lazy(() => import("../common/ConfirmationModal").then(module => ({ default: module.ConfirmationModal })));
 const EnhancedTimeSheetTable = lazy(() => import("./EnhancedTimesheetTable").then(module => ({ default: module.EnhancedTimeSheetTable })));
@@ -34,242 +29,52 @@ const TimesheetTimeline = lazy(() => import("./TimesheetTimeline"));
 
 
 export const TimeSheetList = () => {
-  const [timeEntries, setTimeEntries] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // Zustand store integration
+  const {
+    timeEntries,
+    loading,
+    error,
+    processes,
+    activities,
+    organizations,
+    customers,
+    viewMode,
+    currentDate,
+    pagination,
+    loadInitialData,
+    loadTimeEntries,
+    addTimeEntry,
+    updateTimeEntry,
+    deleteTimeEntry,
+    setViewMode,
+    setCurrentDate,
+    setError,
+  } = useTimesheetStore();
+
 
   // Modal states
   const [showTimeEntryModal, setShowTimeEntryModal] = useState(false);
   const [selectedTimeEntry, setSelectedTimeEntry] = useState(null);
   const [modalMode, setModalMode] = useState("create");
 
-  // View states
-  // "list" = table, "card" = card, "calendar" = month calendar, "calendarLand" = calendar landscape view, "timeline" = timeline view
-  const [viewMode, setViewMode] = useState("list");
-  const [currentDate, setCurrentDate] = useState(new Date());
-
-  // Data for dropdowns
-  const [processes, setProcesses] = useState([]);
-  const [activities, setActivities] = useState([]);
-  const [organizations, setOrganizations] = useState([]);
-  const [customers, setCustomers] = useState([]);
-
   // Delete confirmation
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    totalPages: 1,
-    totalEntries: 0,
-    hasNext: false,
-    hasPrev: false,
-  });
-
   const auth = useMockAuth(); // Using mock auth
   const { user, isLoading: authLoading } = auth;
 
   useEffect(() => {
-    // Load data immediately since mock auth is always ready
+    // Load initial dropdown data from the store
     loadInitialData();
-  }, []); // Empty dependency array - load once on mount
+  }, [loadInitialData]);
 
   useEffect(() => {
-    // Load time entries immediately since mock auth is always ready
+    // Load time entries based on the current date and view mode from the store
     loadTimeEntries();
-  }, [currentDate, viewMode]); // Reload when date or view mode changes
+  }, [currentDate, viewMode, loadTimeEntries]);
 
-  const loadInitialData = async () => {
-    try {
-      // Load all data in parallel (processes will also load activities)
-      await Promise.all([
-        loadOrganizations(),
-        loadProcesses(), // This now also loads activities
-        loadCustomers(),
-      ]);
-    } catch (error) {
-      console.error("Error loading initial data:", error);
-    }
-  };
-
-  const loadOrganizations = async () => {
-    try {
-      const response = await organizationService.getActiveOrganizations();
-      if (response.success) {
-        setOrganizations(response.data || []); // Use data directly
-      } else {
-        console.error("Failed to load organizations:", response);
-        showToast.error("Failed to load organizations");
-      }
-    } catch (error) {
-      console.error("Error loading organizations:", error);
-      showToast.error(`Error loading organizations: ${error.message}`);
-    }
-  };
-
-  const loadProcesses = async () => {
-    try {
-      const response = await processService.getProcesses();
-      if (response.success) {
-        const processesData = response.data?.processes || response.data || [];
-        setProcesses(processesData);
-
-        // Extract activities from the loaded processes
-        const allActivities = [];
-        processesData.forEach((process) => {
-          if (process.activities && Array.isArray(process.activities)) {
-            process.activities.forEach((activity) => {
-              allActivities.push({
-                ...activity,
-                processId: process.id,
-                processName: process.name,
-              });
-            });
-          }
-        });
-        setActivities(allActivities);
-      } else {
-        console.error("Failed to load processes:", response);
-        showToast.error("Failed to load processes");
-      }
-    } catch (error) {
-      console.error("Error loading processes:", error);
-      showToast.error(`Error loading processes: ${error.message}`);
-    }
-  };
-
-  const loadActivities = async () => {
-    try {
-      // Get activities from the processes we already loaded instead of making separate API calls
-      if (processes.length > 0) {
-        const allActivities = [];
-        processes.forEach((process) => {
-          if (process.activities && Array.isArray(process.activities)) {
-            process.activities.forEach((activity) => {
-              allActivities.push({
-                ...activity,
-                processId: process.id,
-                processName: process.name,
-              });
-            });
-          }
-        });
-        setActivities(allActivities);
-      } else {
-        // If no processes loaded yet, just set empty array
-        setActivities([]);
-      }
-    } catch (error) {
-      console.error("Error loading activities:", error);
-      showToast.error(`Error loading activities: ${error.message}`);
-    }
-  };
-
-  const loadCustomers = async () => {
-    try {
-      const response = await customerService.getCustomers();
-      if (response.success) {
-        setCustomers(response.data || []); // Use data directly
-      } else {
-        console.error("Failed to load customers:", response);
-        showToast.error("Failed to load customers");
-      }
-    } catch (error) {
-      console.error("Error loading customers:", error);
-      showToast.error(`Error loading customers: ${error.message}`);
-    }
-  };
-
-  const getDateRangeForView = () => {
-    const date = new Date(currentDate);
-
-    switch (viewMode) {
-      case "daily":
-      case "timeline":
-        return {
-          start: date.toISOString().split("T")[0],
-          end: date.toISOString().split("T")[0],
-        };
-
-      case "weekly":
-        const startOfWeek = new Date(date);
-        startOfWeek.setDate(date.getDate() - date.getDay());
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(startOfWeek.getDate() + 6);
-        return {
-          start: startOfWeek.toISOString().split("T")[0],
-          end: endOfWeek.toISOString().split("T")[0],
-        };
-
-      case "monthly":
-      case "calendar":
-      case "calendarLand":
-        const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
-        const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-        return {
-          start: startOfMonth.toISOString().split("T")[0],
-          end: endOfMonth.toISOString().split("T")[0],
-        };
-
-      default:
-        return {
-          start: date.toISOString().split("T")[0],
-          end: date.toISOString().split("T")[0],
-        };
-    }
-  };
-
-  const loadTimeEntries = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Apply date filtering for all views to keep them in sync
-      let queryParams = {};
-      const dateRange = getDateRangeForView();
-
-      // For list and card views, use daily range (same as timeline)
-      // For calendar views, use appropriate range
-      if (
-        viewMode === "list" ||
-        viewMode === "card" ||
-        viewMode === "timeline"
-      ) {
-        // Use daily range for list, card, and timeline views
-        const date = new Date(currentDate);
-        queryParams.startDate = date.toISOString().split("T")[0];
-        queryParams.endDate = date.toISOString().split("T")[0];
-      } else {
-        // Use the calculated range for calendar views
-        queryParams.startDate = dateRange.start;
-        queryParams.endDate = dateRange.end;
-      }
-
-      const response = await timesheetService.getTimeEntries(queryParams);
-
-      if (response.success) {
-        setTimeEntries(response.data || []);
-        // TODO: Add pagination support if needed
-        setPagination({
-          currentPage: 1,
-          totalPages: 1,
-          totalEntries: response.data?.length || 0,
-          hasNext: false,
-          hasPrev: false,
-        });
-      } else {
-        setError(response.error || 'Failed to load time entries');
-      }
-    } catch (err) {
-      console.error("Error loading time entries:", err);
-      const errorMessage = err.message || "Failed to load time entries";
-      setError(errorMessage);
-      showToast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const openTimeEntryModal = useCallback((mode, entry = null, dateInfo = null) => {
     setModalMode(mode);
@@ -301,21 +106,10 @@ export const TimeSheetList = () => {
 
 
   const handleTimeEntrySave = useCallback(async (entryData) => {
-    // Only update state, do not close modal or reload here. Modal handles API and close.
-    if (modalMode === "create") {
-      setTimeEntries((prev) => [entryData, ...prev]);
-      loadTimeEntries();
-    } else if (modalMode === "edit") {
-      setTimeEntries((prev) =>
-        prev.map((entry) =>
-          (entry.id || entry._id) === (entryData.id || entryData._id)
-            ? entryData
-            : entry
-        )
-      );
-      loadTimeEntries();
-    }
-  }, [modalMode]);
+    // The modal now handles the API call and state update via the store
+    // This function can be used for any post-save logic if needed, but for now, it's just for consistency.
+    // The modal will call the store's addTimeEntry or updateTimeEntry.
+  }, []);
 
   const handleDeleteRequest = useCallback((entryId) => {
     const entry = timeEntries.find((e) => (e.id || e._id) === entryId);
@@ -332,19 +126,14 @@ export const TimeSheetList = () => {
 
     try {
       const entryId = entryToDelete.id || entryToDelete._id;
-      await timesheetService.deleteTimeEntry(entryId);
-
-      setTimeEntries((prev) =>
-        prev.filter((entry) => (entry.id || entry._id) !== entryId)
-      );
+      await deleteTimeEntry(entryId); // Call store action
 
       showToast.success("Time entry deleted successfully");
       setShowDeleteModal(false);
       setEntryToDelete(null);
-      loadTimeEntries();
     } catch (err) {
-      console.error("Error deleting time entry:", err);
-      showToast.error("Failed to delete time entry");
+      // The store handles showing the error toast
+      logger.error("Failed to delete time entry from component", err);
     } finally {
       setIsDeleting(false);
     }
@@ -373,16 +162,6 @@ export const TimeSheetList = () => {
       <div>
         {/* Header */}
         <div className="mb-6">
-          {/* Title Section */}
-          {/* <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Timesheet</h1>
-              <p className="mt-2 text-sm text-gray-600">
-                Track your time and manage entries
-              </p>
-            </div>
-          </div>*/}
-
           {/* Controls Section */}
           <div className="flex flex-col lg:flex-row lg:justify-start lg:items-start space-y-4 lg:space-y-0">
             {" "}
@@ -490,13 +269,14 @@ export const TimeSheetList = () => {
                   openTimeEntryModal("create", null, dateInfo)
                 }
                 onEditEntry={(entry) => openTimeEntryModal("edit", entry)}
-              onDeleteEntry={handleDeleteRequest}
-              projects={processes}
-              activities={activities}
-              organizations={organizations}
-              customers={customers}
-              loading={loading}
-            />
+                onDeleteEntry={handleDeleteRequest}
+                projects={processes}
+                activities={activities}
+                customers={customers}
+                loading={loading}
+                onStartTimer={() => {}}
+                activeTimer={null}
+              />
           </div>
           <div
             style={{ display: viewMode === "calendarLand" ? "block" : "none" }}
@@ -512,9 +292,10 @@ export const TimeSheetList = () => {
               onDeleteEntry={handleDeleteRequest}
               projects={processes}
               activities={activities}
-              organizations={organizations}
               customers={customers}
               loading={loading}
+              onStartTimer={() => {}}
+              activeTimer={null}
             />
           </div>
           <div style={{ display: viewMode === "timeline" ? "block" : "none" }}>
@@ -570,7 +351,7 @@ export const TimeSheetList = () => {
               timeEntries={timeEntries}
               onEdit={(entry) => openTimeEntryModal("edit", entry)}
               onDelete={handleDeleteRequest}
-              projects={processes}
+              processes={processes}
               activities={activities}
               organizations={organizations}
               customers={customers}
@@ -595,6 +376,8 @@ export const TimeSheetList = () => {
           }}
           onSave={handleTimeEntrySave}
           mode={modalMode}
+          organizations={organizations} // Pass organizations from the store
+          customers={customers} // Pass customers from the store
           projects={processes}
           activities={activities}
         />          {/* Delete Confirmation Modal */}
