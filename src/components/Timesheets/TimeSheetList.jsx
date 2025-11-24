@@ -1,5 +1,5 @@
 // src/components/Timesheets/TimeSheetList.jsx - Main container with calendar views
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
 import {
   Plus,
   RefreshCw,
@@ -16,12 +16,6 @@ import {
 // import { useAuth } from "react-oidc-context"; // COGNITO DISABLED
 import { useMockAuth } from "../../hooks/useMockAuth"; // Mock auth when Cognito is disabled
 import { Button } from "../common/Button";
-import { ConfirmationModal } from "../common/ConfirmationModal";
-import { EnhancedTimeSheetTable } from "./EnhancedTimesheetTable";
-import { TimeSheetModal } from "./TimeSheetModal";
-import { TimesheetCalendarView } from "./TimesheetCalendarView";
-import { TimesheetCalendarView as TimesheetCalendarLandscapeView } from "./TimesheetCalendarView_Enhanced";
-import TimesheetTimeline from "./TimesheetTimeline";
 import { timesheetService } from "../../services/timesheetService";
 import { processService } from "../../services/processService";
 import { organizationService } from "../../services/organizationService";
@@ -29,6 +23,15 @@ import { customerService } from "../../services/customerService";
 import { activityService } from "../../services/activityService";
 import { showToast } from "../../utils/toast";
 import logger from "../../utils/logger";
+import LoadingScreen from "../LoadingScreen";
+
+const ConfirmationModal = lazy(() => import("../common/ConfirmationModal").then(module => ({ default: module.ConfirmationModal })));
+const EnhancedTimeSheetTable = lazy(() => import("./EnhancedTimesheetTable").then(module => ({ default: module.EnhancedTimeSheetTable })));
+const TimeSheetModal = lazy(() => import("./TimeSheetModal").then(module => ({ default: module.TimeSheetModal })));
+const TimesheetCalendarView = lazy(() => import("./TimesheetCalendarView").then(module => ({ default: module.TimesheetCalendarView })));
+const TimesheetCalendarLandscapeView = lazy(() => import("./TimesheetCalendarView_Enhanced").then(module => ({ default: module.TimesheetCalendarView })));
+const TimesheetTimeline = lazy(() => import("./TimesheetTimeline"));
+
 
 export const TimeSheetList = () => {
   const [timeEntries, setTimeEntries] = useState([]);
@@ -476,18 +479,19 @@ export const TimeSheetList = () => {
         )}
 
         {/* Time Entries View - All views mounted, only one visible for smooth transitions */}
-        <div style={{ position: "relative" }}>
-          <div style={{ display: viewMode === "calendar" ? "block" : "none" }}>
-            <TimesheetCalendarView
-              timeEntries={timeEntries}
-              currentDate={currentDate}
-              onDateChange={setCurrentDate}
-              onAddEntry={(dateInfo) =>
-                openTimeEntryModal("create", null, dateInfo)
-              }
-              onEditEntry={(entry) => openTimeEntryModal("edit", entry)}
+        <Suspense fallback={<LoadingScreen />}>
+          <div style={{ position: "relative" }}>
+            <div style={{ display: viewMode === "calendar" ? "block" : "none" }}>
+              <TimesheetCalendarView
+                timeEntries={timeEntries}
+                currentDate={currentDate}
+                onDateChange={setCurrentDate}
+                onAddEntry={(dateInfo) =>
+                  openTimeEntryModal("create", null, dateInfo)
+                }
+                onEditEntry={(entry) => openTimeEntryModal("edit", entry)}
               onDeleteEntry={handleDeleteRequest}
-              processes={processes}
+              projects={processes}
               activities={activities}
               organizations={organizations}
               customers={customers}
@@ -506,7 +510,7 @@ export const TimeSheetList = () => {
               }
               onEditEntry={(entry) => openTimeEntryModal("edit", entry)}
               onDeleteEntry={handleDeleteRequest}
-              processes={processes}
+              projects={processes}
               activities={activities}
               organizations={organizations}
               customers={customers}
@@ -566,7 +570,7 @@ export const TimeSheetList = () => {
               timeEntries={timeEntries}
               onEdit={(entry) => openTimeEntryModal("edit", entry)}
               onDelete={handleDeleteRequest}
-              processes={processes}
+              projects={processes}
               activities={activities}
               organizations={organizations}
               customers={customers}
@@ -593,21 +597,20 @@ export const TimeSheetList = () => {
           mode={modalMode}
           projects={processes}
           activities={activities}
-        />
-
-        {/* Delete Confirmation Modal */}
-        <ConfirmationModal
-          isOpen={showDeleteModal}
-          onClose={cancelDelete}
-          onConfirm={confirmDelete}
-          title="Delete Time Entry"
-          message="Are you sure you want to delete this time entry? This action cannot be undone."
-          confirmText="Delete Entry"
-          cancelText="Cancel"
-          type="delete"
-          isLoading={isDeleting}
-          itemName={entryToDelete ? "Time Entry" : null}
-        />
+        />          {/* Delete Confirmation Modal */}
+          <ConfirmationModal
+            isOpen={showDeleteModal}
+            onClose={cancelDelete}
+            onConfirm={confirmDelete}
+            title="Delete Time Entry"
+            message="Are you sure you want to delete this time entry? This action cannot be undone."
+            confirmText="Delete Entry"
+            cancelText="Cancel"
+            type="delete"
+            isLoading={isDeleting}
+            itemName={entryToDelete ? "Time Entry" : null}
+          />
+        </Suspense>
       </div>
     </>
   );

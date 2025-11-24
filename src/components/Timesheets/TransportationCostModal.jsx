@@ -43,10 +43,25 @@ export const TransportationCostModal = ({
   const [loadingToll, setLoadingToll] = useState(false);
   const [transportationError, setTransportationError] = useState("");
 
-  // Reset state from initialData every time modal is opened
+  // Reset state when modal opens
   useEffect(() => {
-    if (isOpen && initialData) {
-      setTransportationData(initialData);
+    if (isOpen) {
+      // If there's initial data, use it. Otherwise, reset to default.
+      if (initialData) {
+        setTransportationData(initialData);
+      } else {
+        setTransportationData({
+          entryLocation: "",
+          entryLocationName: "",
+          exitLocation: "",
+          exitLocationName: "",
+          selectedClass: "",
+          cost: 0
+        });
+      }
+      // Always reset toll data and errors
+      setTollData(null);
+      setTransportationError("");
     }
   }, [isOpen, initialData]);
 
@@ -70,8 +85,8 @@ export const TransportationCostModal = ({
       transportationData.entryLocation !== transportationData.exitLocation
     ) {
       loadTollPrices(
-        transportationData.entryLocation,
-        transportationData.exitLocation
+        transportationData.entryLocationName,
+        transportationData.exitLocationName
       );
     } else if (
       transportationData.entryLocation &&
